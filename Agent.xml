@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<RMLModule targetNamespace="https://github.com/davidhstocker/Intentsity" xmlns="https://github.com/davidhstocker/Intentsity"
+	xsi:schemaLocation="https://raw.githubusercontent.com/davidhstocker/Memetic/master/Memetic/Memetic.xsd"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+	<ListOfPropertyRestriction>
+		<PropertyRestriction id="TagDataType">
+			<RestrictionValueString>Str</RestrictionValueString>
+			<RestrictionValueString>Int</RestrictionValueString>
+			<RestrictionValueString>Num</RestrictionValueString>
+			<RestrictionValueString>StrList</RestrictionValueString>
+			<RestrictionValueString>IntList</RestrictionValueString>
+			<RestrictionValueString>NumList</RestrictionValueString>
+			<RestrictionValueString>StrKeyValuePairList</RestrictionValueString>
+			<RestrictionValueString>IntKeyValuePairList</RestrictionValueString>
+			<RestrictionValueString>IntKeyValuePairList</RestrictionValueString>
+			<RestrictionValueString>urlPOST</RestrictionValueString>
+			<RestrictionValueString>urlGET</RestrictionValueString>
+		</PropertyRestriction>
+		<PropertyRestriction id="URLType">
+			<RestrictionValueString>urlPOST</RestrictionValueString>
+			<RestrictionValueString>urlGET</RestrictionValueString>
+		</PropertyRestriction>
+		<PropertyRestriction id="MoleculeNodeDataType">
+			<RestrictionValueString>Str</RestrictionValueString>
+			<RestrictionValueString>Int</RestrictionValueString>
+			<RestrictionValueString>Num</RestrictionValueString>
+			<RestrictionValueString>StrList</RestrictionValueString>
+			<RestrictionValueString>IntList</RestrictionValueString>
+			<RestrictionValueString>NumList</RestrictionValueString>
+			<RestrictionValueString>StrKeyValuePairList</RestrictionValueString>
+			<RestrictionValueString>IntKeyValuePairList</RestrictionValueString>
+			<RestrictionValueString>IntKeyValuePairList</RestrictionValueString>
+		</PropertyRestriction>
+	</ListOfPropertyRestriction>	
+	s
+	<ListOfMetaMeme>	
+	
+		<MetaMeme id="Agent">
+			<MetaMemeExtensions>
+				<MetaMemeID>Graphyne.DNA.Thing</MetaMemeID>
+			</MetaMemeExtensions>
+			<MetaMemeProperty name="technicalName" type="string"/>
+			<MetaMemeProperty name="description" type="string"/>
+			<MetaMemeProperty name="CallbackURL" type="string"/>
+			<MemberMetaMeme reference="ControllerMM" min="1" max="1"/>
+			<MemberMetaMeme reference="Landmark" min="0"/>
+			<MemberMetaMeme reference="Graphyne.DNA.StateEventScript" min="0" max="3"/>
+		</MetaMeme>
+		<MetaMeme id="CompositeAgentChildren">
+			<MemberMetaMeme reference="Agent" min="1"/>
+		</MetaMeme>
+		<MetaMeme id="CompositeAgent">
+			<MetaMemeExtensions>
+				<MetaMemeID>Agent</MetaMemeID>
+			</MetaMemeExtensions>
+			<MemberMetaMeme reference="CompositeAgentChildren" min="1" max="1"/>
+		</MetaMeme>
+		<MetaMeme id="ControllerReference">
+			<MetaMemeProperty name="IsActive" type="boolean"/>
+		</MetaMeme>	
+		
+		<MetaMeme id="OrderedListMember">
+			<MetaMemeProperty name="Priority" type="integer"/>
+		</MetaMeme>
+		<MetaMeme id="ConditionalMember">
+			<MetaMemeExtensions>
+				<MetaMemeID>OrderedListMember</MetaMemeID>	
+			</MetaMemeExtensions>
+			<MemberMetaMeme reference="Graphyne.Condition.Condition" min="1" max="1"/>
+		</MetaMeme>
+		
+		<!-- Landmark -->
+		
+		<MetaMeme id="Landmark">
+			<MemberMetaMeme reference="Scope" min="1" max="1"/>
+			<MemberMetaMeme reference="View" min="1" max="1"/>
+			<MemberMetaMeme reference="Graphyne.DNA.StateEventScript" min="0" max="1"/>
+		</MetaMeme>	
+		<MetaMeme id="Scope" singleton="true">
+			<MemberMetaMeme reference="Page" min="1"/>
+		</MetaMeme>
+		<MetaMeme id="View" singleton="true">
+			<MemberMetaMeme reference="Page" min="1"/>
+		</MetaMeme>
+		<MetaMeme id="Page" switch="false" singleton="true"/>
+		
+		<MetaMeme id="ControllerMM">
+			<MetaMemeExtensions>
+				<MetaMemeID>Agent.Landmark</MetaMemeID>
+			</MetaMemeExtensions>
+			<MetaMemeProperty name="ControllerID" type="string"/>
+			<MetaMemeProperty name="CallbackURL" type="string"/>
+		</MetaMeme>
+		<MetaMeme id="MoleculeNodeMM">
+			<MetaMemeExtensions>
+				<MetaMemeID>Agent.Landmark</MetaMemeID>
+			</MetaMemeExtensions>
+			<MemberMetaMeme reference="TagMM" min="0"/>
+		</MetaMeme>
+		<MetaMeme id="RESTPropertyMM" singleton="true">
+			<MetaMemeProperty name="description" type="string"/>
+			<MetaMemeProperty name="dataType" type="string" restriction="TagDataType"/>
+		</MetaMeme>
+		<MetaMeme id="TagMM" singleton="true">
+			<MetaMemeExtensions>
+				<MetaMemeID>Agent.Landmark</MetaMemeID>
+			</MetaMemeExtensions>
+			<MetaMemeProperty name="description" type="string"/>
+			<MemberMetaMeme reference="RESTPropertyMM"/>
+		</MetaMeme>	
+		<MetaMeme id="IntentMM" singleton="true">
+			<MetaMemeExtensions>
+				<MetaMemeID>Agent.Landmark</MetaMemeID>
+			</MetaMemeExtensions>
+			<MetaMemeProperty name="description" type="string"/>
+		</MetaMeme>	
+		<MetaMeme id="EventMM" singleton="true">
+			<MetaMemeExtensions>
+				<MetaMemeID>Agent.Landmark</MetaMemeID>
+			</MetaMemeExtensions>
+			<MetaMemeProperty name="description" type="string"/>
+		</MetaMeme>
+</ListOfMetaMeme>
+
+	<ListOfMeme>
+		<Meme id="DefaultTag" metameme="TagMM">
+			<MemberMeme occurrence="1" memberID="DefaultScope"/>
+	    	<MemberMeme occurrence="1" memberID="DefaultView"/>
+	    </Meme>
+	    
+		<Meme id="DefaultPage" metameme="Page">
+	    </Meme>
+	    		
+		<Meme id="DefaultScope" metameme="Scope">
+	    	<MemberMeme occurrence="1" memberID="DefaultPage"/>
+	    </Meme>
+
+		<Meme id="DefaultView" metameme="View">
+	    	<MemberMeme occurrence="1" memberID="DefaultPage"/>
+	    </Meme>
+	    
+	    
+		<Meme id="Controller" metameme="ControllerMM">
+	    	<MemberMeme occurrence="1" memberID="ControllerInitSES"/>
+	    	<MemberMeme occurrence="1" memberID="DefaultScope"/>
+	    	<MemberMeme occurrence="1" memberID="DefaultView"/>
+	    </Meme>
+	    
+		<Meme id="DefaultController" metameme="ControllerMM" singleton="true">
+	    	<MemberMeme occurrence="1" memberID="ControllerInitSES"/>
+	    	<MemberMeme occurrence="1" memberID="DefaultScope"/>
+	    	<MemberMeme occurrence="1" memberID="DefaultView"/>
+	    </Meme>
+	    	    	
+		
+		<Meme id="ServiceMolecule" metameme="Agent">
+			<MemberMeme occurrence="1" memberID="IntentDeclarationSES"/>
+			<MemberMeme occurrence="1" memberID="Controller"/>
+		</Meme>	
+		
+		<Meme id="IntentMolecule" metameme="Agent">
+			<MemberMeme occurrence="1" memberID="IntentDeclarationSES"/>
+			<MemberMeme occurrence="1" memberID="Controller"/>
+		</Meme>	
+		
+		<Meme id="MoleculeNode" metameme="MoleculeNodeMM">
+			<MemberMeme occurrence="1" memberID="MoleculeNodeSES"/>
+			<MemberMeme occurrence="1" memberID="DefaultTag"/>
+			<MemberMeme occurrence="1" memberID="DefaultScope"/>
+			<MemberMeme occurrence="1" memberID="DefaultView"/>
+		</Meme>	
+		
+		<Meme id="Molecule" metameme="Agent">
+			<MemberMeme occurrence="1" memberID="EventDeclarationSES"/>
+			<MemberMeme occurrence="1" memberID="DefaultController"/>
+		</Meme>	
+	    
+	    
+	<!-- Scripts -->
+		<Meme id="EventDeclarationScript" metameme="Graphyne.DNA.Script">
+			<MemeProperty name="Script" value="TestPackageActionEngine.ActionEngineTest.StressTestAction"/>
+			<MemeProperty name="Language" value="python"/>
+		</Meme>
+		<Meme id="EventDeclarationSES" metameme="Graphyne.DNA.StateEventScript">
+			<MemeProperty name="State" value="execute"/>
+			<MemberMeme occurrence="1" memberID="EventDeclarationScript" />
+		</Meme>	
+		
+		<Meme id="IntentDeclarationScript" metameme="Graphyne.DNA.Script">
+			<MemeProperty name="Script" value="TestPackageActionEngine.ActionEngineTest.StressTestAction"/>
+			<MemeProperty name="Language" value="python"/>
+		</Meme>
+		<Meme id="IntentDeclarationSES" metameme="Graphyne.DNA.StateEventScript">
+			<MemeProperty name="State" value="execute"/>
+			<MemberMeme occurrence="1" memberID="IntentDeclarationScript" />
+		</Meme>	
+		
+		<Meme id="ControllerInit" metameme="Graphyne.DNA.Script">
+			<MemeProperty name="Script" value="TestPackageActionEngine.ActionEngineTest.StressTestAction"/>
+			<MemeProperty name="Language" value="python"/>
+		</Meme>
+		<Meme id="ControllerInitSES" metameme="Graphyne.DNA.StateEventScript">
+			<MemeProperty name="State" value="execute"/>
+			<MemberMeme occurrence="1" memberID="ControllerInit" />
+		</Meme>
+		
+		<Meme id="MoleculeNodeInit" metameme="Graphyne.DNA.Script">
+			<MemeProperty name="Script" value="TestPackageActionEngine.ActionEngineTest.StressTestAction"/>
+			<MemeProperty name="Language" value="python"/>
+		</Meme>
+		<Meme id="MoleculeNodeSES" metameme="Graphyne.DNA.StateEventScript">
+			<MemeProperty name="State" value="execute"/>
+			<MemberMeme occurrence="1" memberID="MoleculeNodeInit" />
+		</Meme>	
+		
+		<Meme id="LandmarkInit" metameme="Graphyne.DNA.Script">
+			<MemeProperty name="Script" value="TestPackageActionEngine.ActionEngineTest.StressTestAction"/>
+			<MemeProperty name="Language" value="python"/>
+		</Meme>
+		<Meme id="LandmarkInitSES" metameme="Graphyne.DNA.StateEventScript">
+			<MemeProperty name="State" value="execute"/>
+			<MemberMeme occurrence="1" memberID="LandmarkInit" />
+		</Meme>	
+	</ListOfMeme>
+</RMLModule>

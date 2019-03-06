@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<RMLModule xmlns="https://github.com/davidhstocker/Memetic"
+	xsi:schemaLocation="https://raw.githubusercontent.com/davidhstocker/Memetic/master/Memetic/Memetic.xsd"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	xsi:schemaLocation="http://sourceforge.net/p/rulesetmodeling/code/HEAD/tree/Schemas/RMLDocument.xsd"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<Metadata>
+		<Revision>
+		  <CreationDate>2009-12-05</CreationDate>
+		  <ParentUUID>ParentUUID</ParentUUID>
+		  <ParentURL>ParentURL</ParentURL>
+		</Revision>
+		<Contributor>
+		  <Author>David Stocker</Author>
+		  <AuthorContact></AuthorContact>
+		  <AuthorURL>http://www.projectangela.org</AuthorURL>
+		  <Comments>First definition of Agent in RML</Comments>
+		  <Copyright>Project Angela</Copyright>
+		  <License>MIT</License>
+		  <SourceData>SourceData</SourceData>
+		</Contributor>		
+	</Metadata>
+	
+	<ListOfMetaMeme>
+		<!-- Stimulus -->
+		<MetaMeme id="Descriptor" switch="true" singleton="true">
+			<MemberMetaMeme reference="Graphyne.DNA.StateEventScript" min="0" max="2"/>
+			<MemberMetaMeme reference="InternationalizedDescriptor" min="0" max="1"/>
+			<MemberMetaMeme reference="Text" min="0" max="1"/>
+		</MetaMeme>
+		<MetaMeme id="ConditionalStimulus">
+			<MetaMemeExtensions>
+				<MetaMemeID>Agent.ConditionalMember</MetaMemeID>
+			</MetaMemeExtensions>
+			<MetaMemeProperty name="RenderStageFiltering" type="boolean"/>
+			<MetaMemeProperty name="Priority" type="integer"/>
+			<MemberMetaMeme reference="Stimulus" min="1" max="1"/>
+		</MetaMeme>
+		<MetaMeme id="Stimulus" switch="true" singleton="true">
+			<MemberMetaMeme reference="AnchoredStimulus" min="1" max="1"/>
+			<MemberMetaMeme reference="FreeStimulus" min="1" max="1"/>
+		</MetaMeme>
+		<MetaMeme id="FreeStimulus">
+			<MetaMemeExtensions>
+				<MetaMemeID>Graphyne.DNA.Thing</MetaMemeID>
+			</MetaMemeExtensions>
+			<MemberMetaMeme reference="StimulusScope" min="1" max="1"/>
+			<MemberMetaMeme reference="Descriptor" min="1" max="1"/>
+			<MemberMetaMeme reference="SuccessorStimulus" min="0" max="1"/>			
+		</MetaMeme>	
+		<MetaMeme id="AnchoredStimulus">
+			<MetaMemeExtensions>
+				<MetaMemeID>Graphyne.DNA.Thing</MetaMemeID>
+			</MetaMemeExtensions>
+			<MemberMetaMeme reference="StimulusScope" min="1" max="1"/>
+			<MemberMetaMeme reference="Descriptor" min="1" max="1"/>
+			<MemberMetaMeme reference="Anchor" min="1"/>
+			<MemberMetaMeme reference="SuccessorStimulus" min="0"/>		
+		</MetaMeme>	
+		<MetaMeme id="StimulusScope" switch="true">
+			<MemberMetaMeme reference="Agent.Scope" min="1" max="1"/>
+			<MemberMetaMeme reference="ScopeIntersection" min="1" max="1"/>
+			<MemberMetaMeme reference="SubjectScipe" min="1" max="1"/>
+		</MetaMeme>
+		<MetaMeme id="ScopeIntersection" singleton="true"/>
+		<MetaMeme id="SubjectScipe" singleton="true"/>
+		<MetaMeme id="Anchor">
+			<MemberMetaMeme reference="Stimulus" min="1"/>
+		</MetaMeme>
+		<MetaMeme id="SuccessorStimulus">
+			<MemberMetaMeme reference="StimulusChoice" min="1" max="1"/>
+		</MetaMeme>
+		<MetaMeme id="StimulusChoice">
+			<MemberMetaMeme reference="ConditionalStimulus" min="0"/>
+			<MemberMetaMeme reference="StimulusScope" min="0" max="1"/>
+		</MetaMeme>
+	
+		<!-- Internationalized Descriptors -->
+		<MetaMeme id="DescriptorToken" singleton="true">
+			<MemberMetaMeme reference="ConditionalDescriptor" min="0"/>
+			<MemberMetaMeme reference="DefaultDescriptor" min="1" max="1"/>
+		</MetaMeme>
+		<MetaMeme id="DefaultDescriptor">
+			<MemberMetaMeme reference="Descriptor" min="1" max="1"/>
+		</MetaMeme>
+		<MetaMeme id="ConditionalDescriptor">
+			<MetaMemeExtensions>
+				<MetaMemeID>Agent.ConditionalMember</MetaMemeID>
+			</MetaMemeExtensions>
+			<MemberMetaMeme reference="Descriptor" min="1" max="1"/>
+		</MetaMeme>
+		<MetaMeme id="ComplexToken" singleton="true">
+			<MetaMemeProperty name="Anchor" type="string" constrained="true"/>
+			<MemberMetaMeme reference="DescriptorToken" min="1" max="1"/>
+		</MetaMeme>		
+		<MetaMeme id="SimpleToken" singleton="true">
+			<MetaMemeProperty name="Anchor" type="string" constrained="true"/>
+			<MetaMemeProperty name="Argument" type="string" constrained="true"/>
+		</MetaMeme>
+		
+		<MetaMeme id="LocalizedDescriptor" singleton="true">
+			<MetaMemeProperty name="Language" type="string" constrained="true" restriction="Graphyne.DNA.ISOLanguageCodes"/>
+			<MetaMemeProperty name="Text" type="string"/>
+			<MemberMetaMeme reference="ComplexToken" min="0"/>
+			<MemberMetaMeme reference="SimpleToken" min="0"/>
+		</MetaMeme>
+		
+		<MetaMeme id="InternationalizedDescriptor" singleton="true">
+			<MetaMemeProperty name="DevLanguage" type="string" constrained="true" restriction="Graphyne.DNA.ISOLanguageCodes"/>
+			<MemberMetaMeme reference="LocalizedDescriptor" min="1"/>
+			<MemberMetaMeme reference="Graphyne.DNA.StateEventScript" min="1" max="1"/>
+		</MetaMeme>
+		
+		<!-- Plain Text -->
+		<MetaMeme id="Text" singleton="false">
+			<MetaMemeProperty name="Content" type="string"/>
+			<MemberMetaMeme reference="Graphyne.DNA.StateEventScript" min="1" max="1"/>
+		</MetaMeme>	
+	</ListOfMetaMeme>
+	
+	<ListOfMeme>
+		<!--  Text State Event Scripts -->
+		<Meme id="TextDescriptorInitScript" metameme="Graphyne.DNA.Script" singleton="true">
+			<MemeProperty name="Script" value="Stimulus.InitText"/>
+			<MemeProperty name="Language" value="python"/>
+		</Meme>
+		<Meme id="TextDescriptorInitSES" metameme="Graphyne.DNA.StateEventScript" singleton="true">
+			<MemeProperty name="State" value="initialize"/>
+			<MemberMeme occurrence="1" memberID="TextDescriptorInitScript" />
+		</Meme>		
+		
+		<!--Internationalized Descriptor Init State Event Script-->
+		<Meme id="I18NDescriptorInitScript" metameme="Graphyne.DNA.Script" singleton="true">
+			<MemeProperty name="Script" value="Stimulus.InitInternationalizedDescriptor"/>
+			<MemeProperty name="Language" value="python"/>
+		</Meme>
+		<Meme id="I18NDescriptorInitSES" metameme="Graphyne.DNA.StateEventScript" singleton="true">
+			<MemeProperty name="State" value="initialize"/>
+			<MemberMeme occurrence="1" memberID="I18NDescriptorInitScript" />
+		</Meme>	
+	</ListOfMeme>
+</RMLModule>

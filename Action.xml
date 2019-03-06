@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<RMLModule targetNamespace="https://github.com/davidhstocker/Intentsity" xmlns="https://github.com/davidhstocker/Intentsity"
+	xsi:schemaLocation="https://raw.githubusercontent.com/davidhstocker/Memetic/master/Memetic/Memetic.xsd"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+	
+	
+	<ListOfMetaMeme>	
+	
+		<MetaMeme id="Action" switch="true" singleton="true">
+			<MemberMetaMeme reference="KeyFrame" min="1" max="1"/>
+			<MemberMetaMeme reference="Choreography" min="1" max="1"/>
+			<MemberMetaMeme reference="Throw" min="1" max="1"/>
+			<MemberMetaMeme reference="Catch" min="1" max="1"/>
+		</MetaMeme>
+		<MetaMeme id="Intent" switch="true" singleton="true">
+			<MemberMetaMeme reference="KeyFrame" min="1" max="1"/>
+			<MemberMetaMeme reference="Choreography" min="1" max="1"/>
+			<MemberMetaMeme reference="Throw" min="1" max="1"/>
+			<MemberMetaMeme reference="Catch" min="1" max="1"/>
+		</MetaMeme>
+		<MetaMeme id="KeyFrame">
+			<MetaMemeExtensions>
+				<MetaMemeID>ActionLandmarks</MetaMemeID>
+			</MetaMemeExtensions>
+			<MemberMetaMeme reference="Graphyne.DNA.StateEventScript" min="0" max="1"/>
+			<MemberMetaMeme reference="Stimulus.StimulusChoice" min="0"/>
+			<MemberMetaMeme reference="ObjectSelectionCondition"  min="0"/>
+			<MemberMetaMeme reference="RequiredCondition" min="0" max="1"/>
+			<MemberMetaMeme reference="Timescale" min="0" max="1"/>
+			<MemberMetaMeme reference="View" min="0" max="1"/>
+		</MetaMeme>
+		<MetaMeme id="Choreography">
+			<MetaMemeExtensions>
+				<MetaMemeID>ActionLandmarks</MetaMemeID>
+			</MetaMemeExtensions>
+			<MetaMemeProperty name="ImplicitCatch" type="boolean"/>
+			<MemberMetaMeme reference="ChoreographyStep" min="1"/>
+		</MetaMeme>
+		<MetaMeme id="ChoreographyStep">
+			<MetaMemeExtensions>
+				<MetaMemeID>Graphyne.DNA.OrderedListMember</MetaMemeID>	
+			</MetaMemeExtensions>
+			<MemberMetaMeme reference="Action" min="1" max="1"/>			
+		</MetaMeme>
+		
+		<MetaMeme id="RequiredCondition">
+			<MemberMetaMeme reference="Graphyne.Condition.Condition" min="0"/>
+		</MetaMeme>
+		
+		<MetaMeme id="ObjectSelectionCondition">
+			<MemberMetaMeme reference="Graphyne.Condition.Condition" min="1" max="1"/>
+		</MetaMeme>
+		
+		<MetaMeme id="Timescale">
+			<MetaMemeExtensions>
+				<MetaMemeID>Graphyne.Numeric.Formula</MetaMemeID>
+			</MetaMemeExtensions>
+		</MetaMeme>
+		
+		<MetaMeme id="View">
+			<MemberMetaMeme reference="Agent.Page" min="1" max="1"/>
+		</MetaMeme>
+		
+		<MetaMeme id="ActionLandmarks">
+			<MemberMetaMeme reference="RequiredLandmarksMM" min="1"/>
+		</MetaMeme>
+		<MetaMeme id="RequiredLandmarksMM">
+			<MemberMetaMeme reference="RequiredLandmark" min="0"/>
+			<MemberMetaMeme reference="MasterLandmark" min="1" max="1"/>
+			<MemberMetaMeme reference="RequiredlandmarksExclusive" min="0" max="1"/>
+		</MetaMeme>
+		<MetaMeme id="MasterLandmark">
+			<MemberMetaMeme reference="RequiredLandmark" min="1" max="1"/>
+		</MetaMeme>
+		<MetaMeme id="RequiredlandmarksExclusive">
+			<MemberMetaMeme reference="RequiredLandmark" min="0"/>
+		</MetaMeme>
+		<MetaMeme id="RequiredLandmark">
+			<MemberMetaMeme reference="Agent.Landmark" min="1" max="1"/>
+		</MetaMeme>
+		
+		<MetaMeme id="StateChangeSet">
+			<MemberMetaMeme reference="StateChange" min="1" max="1"/>
+		</MetaMeme>
+		<MetaMeme id="StateChange" switch="true">
+			<MemberMetaMeme reference="SuccessorAction" min="1" max="1"/>
+			<MemberMetaMeme reference="LinkBreak" min="1" max="1"/>
+			<MemberMetaMeme reference="LinkJoin" min="1" max="1"/>
+			<MemberMetaMeme reference="SimpleStateChange" min="1" max="1"/>
+		</MetaMeme>
+		<MetaMeme id="StateChangeBase">
+			<MetaMemeExtensions>
+				<MetaMemeID>Agent.ConditionalMember</MetaMemeID>
+			</MetaMemeExtensions>
+			<MemberMetaMeme reference="Stimulus.ConditionalStimulus" min="0"/>
+		</MetaMeme>
+		<MetaMeme id="SuccessorAction">
+			<MetaMemeExtensions>
+				<MetaMemeID>StateChangeBase</MetaMemeID>
+			</MetaMemeExtensions>
+			<MetaMemeProperty name="InsertionType" type="string" restriction="InsertionType" constrained="true"/>
+			<MemberMetaMeme reference="Action" min="1" max="1"/>
+		</MetaMeme>
+		<MetaMeme id="LinkBreak">
+			<MetaMemeExtensions>
+				<MetaMemeID>StateChangeBase</MetaMemeID>
+				<MetaMemeID>Graphyne.Condition.MultiAgentAttributeArgument</MetaMemeID>
+			</MetaMemeExtensions>
+		</MetaMeme>
+		<MetaMeme id="LinkJoin">
+			<MetaMemeExtensions>
+				<MetaMemeID>StateChangeBase</MetaMemeID>
+				<MetaMemeID>Graphyne.Condition.MultiAgentAttributeArgument</MetaMemeID>
+			</MetaMemeExtensions>
+			<MetaMemeProperty name="LinkType" type="integer" restriction="LinkType" constrained="true"/>
+		</MetaMeme>
+		<MetaMeme id="SimpleStateChange">
+			<MetaMemeExtensions>
+				<MetaMemeID>StateChangeBase</MetaMemeID>
+			</MetaMemeExtensions>
+			<MemberMetaMeme reference="State" min="1" max="1"/>
+			<MemberMetaMeme reference="Change" min="1" max="1"/>
+		</MetaMeme>
+		<MetaMeme id="State">
+			<MetaMemeExtensions>
+				<MetaMemeID>Graphyne.Condition.AgentAttributeArgument</MetaMemeID>
+			</MetaMemeExtensions>
+		</MetaMeme>
+		<MetaMeme id="Change">
+			<MetaMemeExtensions>
+				<MetaMemeID>Graphyne.Numeric.Formula</MetaMemeID>
+			</MetaMemeExtensions>
+		</MetaMeme>
+
+
+		
+		<MetaMeme id="Throw">
+			<MetaMemeExtensions>
+				<MetaMemeID>ActionLandmarks</MetaMemeID>
+			</MetaMemeExtensions>
+			<MemberMetaMeme reference="RequiredCondition" min="1" max="1"/>
+		</MetaMeme>
+		<MetaMeme id="Catch">
+			<MetaMemeExtensions>
+				<MetaMemeID>ActionLandmarks</MetaMemeID>
+			</MetaMemeExtensions>
+		</MetaMeme>
+
+	</ListOfMetaMeme>	    
+	    
+	<ListOfMeme>
+		<Meme id="DefaultRequiredLandmark" metameme="RequiredLandmark">
+			<MemberMeme occurrence="1" memberID="Agent.DefaultTag" />
+		</Meme>	
+		
+		<Meme id="DefaultMasterLandmark" metameme="MasterLandmark">
+			<MemberMeme occurrence="1" memberID="DefaultRequiredLandmark" />
+		</Meme>	
+		
+		<Meme id="RequiredLandmarks" metameme="RequiredLandmarksMM">
+			<MemberMeme occurrence="1" memberID="DefaultMasterLandmark"/>
+		</Meme>
+	
+		<Meme id="EventScript" metameme="Graphyne.DNA.Script">
+			<MemeProperty name="Script" value="TestPackageActionEngine.ActionEngineTest.StressTestAction"/>
+			<MemeProperty name="Language" value="python"/>
+		</Meme>
+		<Meme id="EventSES" metameme="Graphyne.DNA.StateEventScript">
+			<MemeProperty name="State" value="execute"/>
+			<MemberMeme occurrence="1" memberID="EventScript" />
+		</Meme>	
+		
+		<Meme id="IntentScript" metameme="Graphyne.DNA.Script">
+			<MemeProperty name="Script" value="TestPackageActionEngine.ActionEngineTest.StressTestAction"/>
+			<MemeProperty name="Language" value="python"/>
+		</Meme>
+		<Meme id="IntentSES" metameme="Graphyne.DNA.StateEventScript">
+			<MemeProperty name="State" value="execute"/>
+			<MemberMeme occurrence="1" memberID="IntentScript" />
+		</Meme>	
+		
+		<Meme id="Event" metameme="Action">
+	    	<MemberMeme occurrence="1" memberID="EventKeyFrame"/>
+	    </Meme>
+	    <Meme id="EventKeyFrame" metameme="KeyFrame">
+	    	<MemberMeme occurrence="1" memberID="EventSES"/>
+	    	<MemberMeme occurrence="1" memberID="RequiredLandmarks"/>
+	    </Meme> 
+	    
+		<Meme id="Intent" metameme="Action">
+	    	<MemberMeme occurrence="1" memberID="IntentKeyFrame"/>
+	    </Meme>
+	    <Meme id="IntentKeyFrame" metameme="KeyFrame">
+	    	<MemberMeme occurrence="1" memberID="IntentSES"/>
+	    	<MemberMeme occurrence="1" memberID="RequiredLandmarks"/>
+	    </Meme> 
+	</ListOfMeme>
+
+
+
+</RMLModule>
