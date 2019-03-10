@@ -91,11 +91,7 @@
 
 
 
-# getClusterJSON
-
-
-
-# getClusterJSON
+# getCluster
 
 
 
