@@ -160,7 +160,7 @@ As mentioned above, creators are responsible for maintaining two REST URL endpoi
 
 ### Data
 
-The creator element creation endpoint [/modeling/addcreator][23], is a POST endpoint.  One of the json attributes that must be 
+The creator element creation endpoint [/modeling/addcreator][23], is a POST endpoint.  A json attribute that must be provided when creating a new creator element is XXX.  Its value should be a URL stub.  When a new data moledule is created, 
 
 ### Stimulus
   
