@@ -1,3 +1,4 @@
+# Intentsity
 
 Intentsity is an intelligent-agent friendly, smart REST API broker.  It brings together providers of REST APIs (services) and consumers, based on data context.  Instead of having to build support for each type of REST API that you might conceivably want to use, you build support for a single, simple API and let data context do rest of the work.
  
@@ -28,12 +29,13 @@ The app that the user is using to generate the data would get its own node.  Th
 
 Creator elements are created with [/modeling/addcreator][9]
  
+[The full creator life cycle][10]
  
 ## About Owners vs Creators
  
 The creator might be distinct from the owner.  The owner is about who or what owns the data or the service.  The creator is about who or what owns the technical access to the data or service.  In our fitness app example, the user is the owner of the data.  The app developer is who builds the connectivity in Intentsity and makes it possible for the user to use Intentsity. 
 
-The creator is responsible for maintaining a pair of callback REST URLs, so that it can be reached by Intentsity in response to events within Intentsity.  It must be able to provide the data that it agreed to provide when linking a data molecule node to a tag.  It must also be able to receive the results produced by a service.
+Owners and creators are collectively known as agents and their graph patterns are both based on the Agent.Agent metameme.
  
  
 ## Consumer Molecule
@@ -44,37 +46,37 @@ There are a few bits of information that we’ll use to build out the consumer m
  
 We would then add a table to the graph, represented by an entity.  This table entity is actually a central entity, which every data molecule has.  It is always created form the *Agent.Molecule* meme, of Intentsity’s Memetic schema.  This central entity is linked directly to the creator and owner entities, allowing for single hop graph traverses in either direction.  
 
-A data molecule entity is created with [/modeling/addDataMolecule][10]  It will be linked to the creator and owner when created.
+A data molecule entity is created with [/modeling/addDataMolecule][11]  It will be linked to the creator and owner when created.
  
 Heart rate, pace and timestamp would each get their own entities.  These entities are all created from the *Agent.MoleculeNode* meme, of Intentsity’s Memetic schema.
  
-A data molecule node entity is created with [/modeling/addMoleculeNode/][11].  It will automatically be linked to the parent molecule entity.
+A data molecule node entity is created with [/modeling/addMoleculeNode/][12].  It will automatically be linked to the parent molecule entity.
  
  
 ## Tags
  
 The *Agent.MoleculeNode* entities are all linked to tags.  Tags are singleton memes that act a a control mechanism in Intentsity.  They have three roles. 
  
-They are the universal connectors, between data molecules and services. In the language of Graphyne, they act as [singleton bridges][12] between molecules.  Graph traverses specifically designed for a certain pattern 
+They are the universal connectors, between data molecules and services. In the language of Graphyne, they act as [singleton bridges][13] between molecules.  Graph traverses specifically designed for a certain pattern 
  
 They are how data molecule node entities declare what they are to the world.  This is done by simply linking molecule nodes to tag entities.  This is called ‘tagging’ and the molecule node is said to be ‘tagged’ with a particular tag.
  
 They are how service molecules declare what kind of data that they want to the world.
  
-In our example data, heart rate app example, heart rate and pace are lists of numbers that can be calculated; they can be summed, averaged, etc.  In [data warehousing terminology, such lists of numbers would be called measures][13].  If there were a tag for measure, both tagged with it and heart rate and pace would be classified as measures.  The timestamp molecule node would be tagged to a timestamp tag.
+In our example data, heart rate app example, heart rate and pace are lists of numbers that can be calculated; they can be summed, averaged, etc.  In [data warehousing terminology, such lists of numbers would be called measures][14].  If there were a tag for measure, both tagged with it and heart rate and pace would be classified as measures.  The timestamp molecule node would be tagged to a timestamp tag.
 
 All tags are singletons.  Each is a unique meme, created from the *Agent.TagMM* metameme.  There is always exactly one entity in the graph, created from that meme.  When an API call is made to create a new entity, the meme is added and the entity is automatically instantiated.
  
-Tags are created with [/modeling/addTag/][14]
+Tags are created with [/modeling/addTag/][15]
 
-Tags are assigned to molecule nodes with [/modeling/addEntityLink/][15]
+Tags are assigned to molecule nodes with [/modeling/addEntityLink/][16]
 
 ![][image-3]
  
 
 ## \ Tag Inheritance
 
-Tags can be extended, just like you’d extend classes in object oriented programming languages.  If a tag has a [directional link ][16]to another tag, it is an extension of the latter.  Any molecule node that uses a tag, also uses all extension tags.  In this case, we could create tags for *Heart Rate (HR) *and *Pace (P)*, which both link to *Measure (M)*.  HR and P would also both be M tags.  
+Tags can be extended, just like you’d extend classes in object oriented programming languages.  If a tag has a [directional link ][17]to another tag, it is an extension of the latter.  Any molecule node that uses a tag, also uses all extension tags.  In this case, we could create tags for *Heart Rate (HR) *and *Pace (P)*, which both link to *Measure (M)*.  HR and P would also both be M tags.  
 
 ![][image-4]
 
@@ -97,16 +99,16 @@ StrKeyValuePairList
 IntKeyValuePairList
 IntKeyValuePairList
 
-Properties are defined using [/modeling/addProperty/][17]
+Properties are defined using [/modeling/addProperty/][18]
 
-Properties are then associated with tags, via  [/modeling/assignTagProperty/][18]
+Properties are then associated with tags, via  [/modeling/assignTagProperty/][19]
 
 
 ## Service Provider Overview
 
 ![][image-6] 
 
-The service molecule is simpler.  Like data molecules, it has a central entity, but it does not deed to define any data structures.  It only needs to link the central entity to the proper tags to define what data it needs.   The central entity is directly tagged in service molecules.  All tags among the service molecule’s [end effectors][19] are considered requirements for enabling that service for a given data molecule.  
+The service molecule is simpler.  Like data molecules, it has a central entity, but it does not deed to define any data structures.  It only needs to link the central entity to the proper tags to define what data it needs.   The central entity is directly tagged in service molecules.  All tags among the service molecule’s [end effectors][20] are considered requirements for enabling that service for a given data molecule.  
 
 A service molecule can apply cardinality to tag links.  By default, the cardinality is 1, meaning 1:1.  A data molecule would have to have one data molecule node tagged with the given tag for the connection to be made.  Any other cardinality value, n, would imply a 1:n relationship.  There would need to be n distinct data molecule nodes tagged with the given tag for the connection to be made.
 
@@ -115,7 +117,7 @@ You need two measures to calculate a coefficient of correlation, so our example 
 
 ## Molecule connections and Compatibility
 
-In Graphyne, clusters that share a common singleton are said to have a [singleton bridge][20].  Molecules are clusters and tags are singletons.  Any data molecule that has data molecule nodes tagged with all of the tags that a service has is said to be compatible with that service.  If
+In Graphyne, clusters that share a common singleton are said to have a [singleton bridge][21].  Molecules are clusters and tags are singletons.  Any data molecule that has data molecule nodes tagged with all of the tags that a service has is said to be compatible with that service.  If
 
 In our example, if both the *Heart Rate* and *Pace* data molecule nodes are tagged to the *Measure* tag, then the data and service molecules are said to be compatible.  
 
@@ -138,38 +140,21 @@ Event services work a bit differently.  Whenever there is a relevant change in t
 
 In terms of how the graph clusters of the services molecules, intents and events are nearly identical.  The only difference is the meme from which the central entity is instantiated.  The central entity of events are instantiated from *Agent.ServiceMolecule* and intents are instantiated from *Agent.IntentMolecule*.  The type of central entity defines the service molecule as a whole.  
 
-Event services are created via [/modeling/addServiceMolecule/][21]
+Event services are created via [/modeling/addServiceMolecule/][22]
 
-Intent services are created via [/modeling/addIntentMolecule/][22]
+Intent services are created via [/modeling/addIntentMolecule/][23]
 
 As with data molecules, service molecules are both automatically linked to their owner and creator entities.
-
- 
-## Self-Contained vs Callback Services
- 
-Every service, whether an event or intent, is either self-contained, or a callback service.  Callback services provide a REST URL, which Intentsity will call when the service is invoked.  Essentially, Intentsity is brokering the REST API call by measuring compatibility and forwarding the invocation to the target URL.  
-
-There is an alternative way for services to work, without using an external callback URL.  They can can execute a native Intentsity action. The default action, that is executed when a service is invoked, requests the callback URL.  If an alternative action is supplied instead and runs entirely in Intentsity, the service is said to be self contained.
-
-Scripts within native Intentsity actions are written in Python.   
-
-
-## Creator Callback URLs
-
-As mentioned above, creators are responsible for maintaining two REST URL endpoints for the data molecules under their care.  
-
-### Data
-
-The creator element creation endpoint [/modeling/addcreator][23], is a POST endpoint.  A json attribute that must be provided when creating a new creator element is XXX.  Its value should be a URL stub.  When a new data moledule is created, 
-
-### Stimulus
-  
-wwww
 
 
 ## Runtime
 
-### Events
+## Intents
+
+When the creator app wishes to invoke an intent in behalf of a data molecule, it calls /action/intent. This will call the relevant (and compatible) intent services. 
+
+
+## Events
 
 When the creator app is ready to inform potential event subscribers of a data update, it calls /action/event. This will update the version of the relevant data molecule node and call all compatible event services.  
 
@@ -187,17 +172,34 @@ Intentsity’s graph does not store data, only the metadata needed for establish
  
  Intentsity is AI friendly.  Its graph can be read and examined by intelligent agents.  It represents a closed system, with a clear set of rules and possible actions.  The following methods from the [Graphyne Graph API ][24]are exposed via REST.
  
-[getClusterJSON][25] via [/ai/getClusterJSON/][26]
-[getEntityHasProperty][27] via [/ai/getEntityHasProperty][28]
-[getEntityMemeType][29] via [/ai/getEntityMemeType/][30]
-[getEntityPropertyType][31] via [/ai/getEntityPropertyType][32]
-[getEntityPropertyValue][33] via [/ai/getEntityPropertyValue][34]
-[getLinkCounterparts][35] via [/ai/getLinkCounterparts][36]
-[getLinkCounterpartsByType][37] via [/ai/getLinkCounterpartsByType][38]
+- [getClusterJSON][25] via [/ai/getClusterJSON/][26]
+- [getEntityHasProperty][27] via [/ai/getEntityHasProperty][28]
+- [getEntityMemeType][29] via [/ai/getEntityMemeType/][30]
+- [getEntityPropertyType][31] via [/ai/getEntityPropertyType][32]
+- [getEntityPropertyValue][33] via [/ai/getEntityPropertyValue][34]
+- [getLinkCounterparts][35] via [/ai/getLinkCounterparts][36]
+- [getLinkCounterpartsByType][37] via [/ai/getLinkCounterpartsByType][38]
 
 
 
 ## Custom Actions and Stimuli
+
+There is a small set of actions and stimuli used by Intentsity, out of the box, for its standard scenarios.  
+
+The actions are:
+- Action.Event
+- Action.Intent
+- Action.EventFinished
+- Action.IntentFinished
+
+The stimuli are:
+
+- Stimulus.Event
+- Stimulus.Intent
+- Stimulus.EventResponse
+- Stimulus.Intent Response
+
+This is by no means exhaustive of the kinds of actions and stimuli that can be created and used.  Intentsity is a full featured complex event processor. [Complex,  self contained actions can be written and executed][39].  Stimuli need not be carriers carriers of json to specific endpoints.  Stimuli can invoke the full suite of [Graphyne conditions][40], to [determine sees what and can provide different resolved messages to different recipients][41].
 
 
  
@@ -212,20 +214,20 @@ Intentsity’s graph does not store data, only the metadata needed for establish
 [7]:	https://github.com/davidhstocker/Graphyne#creating-entities
 [8]:	https://github.com/davidhstocker/Intentsity/blob/master/Docs/Intentsity%20API%20Reference.md#addowner
 [9]:	https://github.com/davidhstocker/Intentsity/blob/master/Docs/Intentsity%20API%20Reference.md#addcreator
-[10]:	https://github.com/davidhstocker/Intentsity/blob/master/Docs/Intentsity%20API%20Reference.md#adddatamolecule
-[11]:	https://github.com/davidhstocker/Intentsity/blob/master/Docs/Intentsity%20API%20Reference.md#addmolecuenode
-[12]:	https://github.com/davidhstocker/Graphyne#singleton-bridges
-[13]:	https://en.wikipedia.org/wiki/Measure_(data_warehouse)
-[14]:	https://github.com/davidhstocker/Intentsity/blob/master/Docs/Intentsity%20API%20Reference.md#addtag
-[15]:	https://github.com/davidhstocker/Intentsity/blob/master/Docs/Intentsity%20API%20Reference.md#addentitylink
-[16]:	https://github.com/davidhstocker/Memetic#directionality
-[17]:	https://github.com/davidhstocker/Intentsity/blob/master/Docs/Intentsity%20API%20Reference.md#addproperty
-[18]:	https://github.com/davidhstocker/Intentsity/blob/master/Docs/Intentsity%20API%20Reference.md#assigntagproperty
-[19]:	https://github.com/davidhstocker/Graphyne#subgraphs-and-clusters
-[20]:	https://github.com/davidhstocker/Graphyne#singleton-bridges
-[21]:	https://github.com/davidhstocker/Intentsity/blob/master/Docs/Intentsity%20API%20Reference.md#addservicemolecule
-[22]:	https://github.com/davidhstocker/Intentsity/blob/master/Docs/Intentsity%20API%20Reference.md#addintentmolecule
-[23]:	https://github.com/davidhstocker/Intentsity/blob/master/Docs/Intentsity%20API%20Reference.md#addcreator
+[10]:	https://github.com/davidhstocker/Intentsity/blob/master/Docs/CreatorElementLifeCycle.md#creator-element-life-cycle
+[11]:	https://github.com/davidhstocker/Intentsity/blob/master/Docs/Intentsity%20API%20Reference.md#adddatamolecule
+[12]:	https://github.com/davidhstocker/Intentsity/blob/master/Docs/Intentsity%20API%20Reference.md#addmolecuenode
+[13]:	https://github.com/davidhstocker/Graphyne#singleton-bridges
+[14]:	https://en.wikipedia.org/wiki/Measure_(data_warehouse)
+[15]:	https://github.com/davidhstocker/Intentsity/blob/master/Docs/Intentsity%20API%20Reference.md#addtag
+[16]:	https://github.com/davidhstocker/Intentsity/blob/master/Docs/Intentsity%20API%20Reference.md#addentitylink
+[17]:	https://github.com/davidhstocker/Memetic#directionality
+[18]:	https://github.com/davidhstocker/Intentsity/blob/master/Docs/Intentsity%20API%20Reference.md#addproperty
+[19]:	https://github.com/davidhstocker/Intentsity/blob/master/Docs/Intentsity%20API%20Reference.md#assigntagproperty
+[20]:	https://github.com/davidhstocker/Graphyne#subgraphs-and-clusters
+[21]:	https://github.com/davidhstocker/Graphyne#singleton-bridges
+[22]:	https://github.com/davidhstocker/Intentsity/blob/master/Docs/Intentsity%20API%20Reference.md#addservicemolecule
+[23]:	https://github.com/davidhstocker/Intentsity/blob/master/Docs/Intentsity%20API%20Reference.md#addintentmolecule
 [24]:	https://github.com/davidhstocker/Graphyne/blob/master/Docs/Graph%20API%20Methods.md
 [25]:	https://github.com/davidhstocker/Graphyne/blob/master/Docs/Graph%20API%20Methods.md#getclusterjson
 [26]:	https://github.com/davidhstocker/Intentsity/blob/master/Docs/Intentsity%20API%20Reference.md#getcluster
@@ -241,6 +243,9 @@ Intentsity’s graph does not store data, only the metadata needed for establish
 [36]:	https://github.com/davidhstocker/Intentsity/blob/master/Docs/Intentsity%20API%20Reference.md#getlinkcounterparts
 [37]:	https://github.com/davidhstocker/Graphyne/blob/master/Docs/Graph%20API%20Methods.md#getlinkcounterpartsbytype
 [38]:	https://github.com/davidhstocker/Intentsity/blob/master/Docs/Intentsity%20API%20Reference.md#getlinkcounterpartsbytype
+[39]:	https://github.com/davidhstocker/Intentsity/blob/master/Docs/Actions.md#actions
+[40]:	https://github.com/davidhstocker/Graphyne/blob/master/Docs/Conditions.md#overview
+[41]:	https://github.com/davidhstocker/Intentsity/blob/master/Docs/Stimuli.md#stimuli
 
 [image-1]:	https://raw.githubusercontent.com/davidhstocker/Intentsity/master/Docs/images/Intentsity_Connection.png
 [image-2]:	https://raw.githubusercontent.com/davidhstocker/Intentsity/master/Docs/images/Intentsity_MoleculeData.png
