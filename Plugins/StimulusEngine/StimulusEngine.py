@@ -589,7 +589,7 @@ class Plugin(Engine.ServicePlugin):
         Graph.logQ.put( [logType , logLevel.ADMIN , moduleName + '.' + self.className + '.' + 'run' , "Templates and Entities are ready.  Stimulus Engine Registrar may now be started"])
        
         Graph.logQ.put( [logType , logLevel.ADMIN , method , "Stimulus Engine Starting"])
-        while self.isAlive():
+        while not self.stoprequest.isSet():
             
             try:
                 if self.startupIndexingFinished == False:
@@ -758,8 +758,9 @@ class Plugin(Engine.ServicePlugin):
         """
         method = moduleName + '.' + self.className + '.' + 'join'
         Graph.logQ.put( [logType , logLevel.ADMIN , method , "......Stimulus Engine shut down"])
-        self._stopevent.set()
-        threading.Thread.join(self, 0.5)
+        self.stoprequest.set()
+        super(Plugin, self).join(0.5)
+        
         
     
     

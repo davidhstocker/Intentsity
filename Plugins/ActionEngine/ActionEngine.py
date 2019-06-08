@@ -94,7 +94,8 @@ class Plugin(Engine.ServicePlugin):
         Engine.startupStateActionEngineFinished = True
         Graph.logQ.put( [logType , logLevel.ADMIN , moduleName + '.' + self.className + '.' + 'run' , "Action Indexer is ready.  Action Engine started"])
                
-        while not self._stopevent.isSet(  ):
+        #while not self._stopevent.isSet(  ):
+        while not self.stoprequest.isSet():
             try:
                 #actionInvoc = Engine.stagingQ.get_nowait()
                 actionInvoc = Engine.aQ.get_nowait()
@@ -386,8 +387,10 @@ class Plugin(Engine.ServicePlugin):
         Graph.logQ.put( [logType , logLevel.ADMIN , method , "...indexer shut down"])
         
         Graph.logQ.put( [logType , logLevel.ADMIN , method , "Action Engine shutting down"])
-        self._stopevent.set()
-        threading.Thread.join(self, 0.5)
+        #self._stopevent.set()
+        #threading.Thread.join(self, 0.5)
+        self.stoprequest.set()
+        super(Plugin, self).join(0.5)
 
 
 
