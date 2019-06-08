@@ -1,6 +1,6 @@
 # Intentsity
 
-Intentsity is an intelligent-agent friendly, smart REST API broker.  It brings together providers of REST APIs (services) and consumers, based on data context.  Instead of having to build support for each type of REST API that you might conceivably want to use, you build support for a single, simple API and let data context do rest of the work.
+Intentsity is an intelligent-agent friendly, smart service broker.  It brings together providers of services and consumers, based on data context.  Instead of having to build support for each type of REST API that you might conceivably want to use, you build support for a single, simple API and let data context do rest of the work.
  
 # 10,000-foot View
  
