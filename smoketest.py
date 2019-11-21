@@ -17,11 +17,17 @@ import queue
 import uuid
 from xml.dom import minidom
 from time import ctime
+import subprocess
 
 from Intentsity import Engine
 import Graphyne.Graph as Graph
 from Graphyne import Fileutils
 from Intentsity import Exceptions
+
+from urllib import parse
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
+import json
 
 
 rmlEngine = Engine.Engine()
@@ -651,9 +657,15 @@ def testStimulusEngineTrailer3():
     #Stimuli are singletons, but we still need to aquire the UUID of the trailer
     stimulusTrailerPath = "TestPackageStimulusEngine.SimpleStimuli.Stimulus_Trailer"
     stimulusID = Graph.api.createEntityFromMeme(stimulusTrailerPath)
-    setOfAgents = set()
-    #listOfAgents =.getAgentsWithViewOfStimulusScope(stimulusID)
-    #setOfAgents = set(listOfAgents)
+    
+    scopePathToAgent = "Agent.View::Agent.Landmark::Agent.Agent"
+    stimulusScope = Graph.api.getLinkCounterpartsByMetaMemeType(stimulusID, "Stimulus.FreeStimulus::Stimulus.StimulusScope::Agent.Scope::Agent.Page")
+    listOfExpectedAgents = []
+    for pageInStimulusScope in stimulusScope:
+        listOfAgents = Graph.api.getLinkCounterpartsByMetaMemeType(pageInStimulusScope, scopePathToAgent, None)
+        listOfExpectedAgents.extend(listOfAgents)
+        
+    setOfAgents = set(listOfExpectedAgents)
     
     testResult = False
     try:
@@ -699,7 +711,7 @@ def testStimulusEngineTrailer3():
             resultSet.append(results)
             n = n + 1
     except Exception as e:
-        results = [n, None, [], [], ""]
+        results = [n, None, "No Presponse", "No Presponse", ""]
         resultSet.append(results)
 
     Graph.logQ.put( [logType , logLevel.DEBUG , method , "exiting"])
@@ -1171,7 +1183,89 @@ def testDescriptorSimpleViaSIQ():
         except Exception as e:
             Graph.logQ.put( [logType , logLevel.DEBUG , method , "Error testing trailer.  Traceback = %s" %e])
     return resultSet
+
+
+
+def testServerAPIStartup(serverURL = None, dbConnectionString = None, persistenceType = None, repoLocations = [[]],  validate = False):
+    """
+        Start the server up, with the applied options.  Check to see that it has successfully started.
+        validateRepository
+        repositories
+        persistenceType
+        dbConnectionString
+        sqlite
+    """
+    method = moduleName + '.' + 'testServerAPIStartup'
+    Graph.logQ.put( [logType , logLevel.DEBUG , method , "entering"])
+    testResult = True
     
+    requestURL = serverURL + "/admin/start"
+    
+    #test invalid parameter in validate repository
+    # should return a 500 error and not start
+    postFieldsDict1 = {"validateRepository" : "Notavalue"}
+    try:
+        #urllib POST request
+        request = Request(url=requestURL, data=bytes(json.dumps(postFieldsDict1), encoding='utf-8'))
+        response1 = urlopen(request).read().decode('utf8')
+        responseStr1= json.loads(response1)
+        #We should get an exception on the request, so we should not reach here
+        testResult = False
+    except Exception as e:
+        if e.code != 500:
+            #The server SHOULD return a 500 error
+            testResult = False
+              
+    #test invalid parameter in validate repository
+    # should return a 500 error and not start
+    postFieldsDict2 = {"validateRepository" : False, "repositories" : "notalist"}
+    try:
+        #urllib POST request
+        request = Request(url=requestURL, data=bytes(json.dumps(postFieldsDict2), encoding='utf-8'))
+        response2 = urlopen(request).read().decode('utf8')
+        responseStr2= json.loads(response2)
+        #We should get an exception on the request, so we should not reach here
+        testResult = False
+    except Exception as e:
+        if e.code != 400:
+            #The server SHOULD return a 400 error when repositories does not contain a nested list
+            testResult = False
+    
+    
+    #test invalid parameter in repositories.  Should be nested list
+    # should return a 500 error and not start
+    postFieldsDict3 = {"validateRepository" : False, "repositories" : ["notalist"]}
+    try:
+        #urllib POST request
+        request = Request(url=requestURL, data=bytes(json.dumps(postFieldsDict3), encoding='utf-8'))
+        response3 = urlopen(request).read().decode('utf8')
+        responseStr3= json.loads(response3)
+        #We should get an exception on the request, so we should not reach here
+        testResult = False
+    except Exception as e:
+        if e.code != 400:
+            #The server SHOULD return a 400 error when repositories does not contain a nested list
+            testResult = False 
+    
+    #This should work, provided that the command line arguments are valid
+    postFieldsDict5 = {"validateRepository" : validate, "repositories" : repoLocations, "dbConnectionString" : dbConnectionString, "persistenceType" : persistenceType}
+    try:
+        #urllib POST request
+        request = Request(url=requestURL, data=bytes(json.dumps(postFieldsDict5), encoding='utf-8'))
+        response5 = urlopen(request).read().decode('utf8')
+    except Exception as e:
+        testResult = False
+    
+    
+    Graph.logQ.put( [logType , logLevel.DEBUG , method , "exiting"])
+    
+    resultSet = []
+    testcase = "API - Engine Startup"
+    testResult = str(testResult)
+    expectedResult = str('True')
+    results = [1, testcase, testResult, expectedResult, ""]
+    resultSet.append(results)
+    return resultSet
 
 
 
@@ -1234,7 +1328,7 @@ def usage():
     print(__doc__)
 
     
-def runTests(css):
+def runTests(css, serverURL = None, dbConnectionString = None, persistenceType = None, repoLocations = [],  validate = False):
     
     method = moduleName + '.' + 'main'
     Graph.logQ.put( [logType , logLevel.DEBUG , method , "entering"])
@@ -1259,7 +1353,7 @@ def runTests(css):
     #start with the graphDB smoke tests
     startTime = time.time()
     resultSet = []
-    
+
 
     #First Action Queue Test
     print("Action Engine (Action Queue)")
@@ -1323,14 +1417,12 @@ def runTests(css):
     testSetData = testStimulusEngineTrailer2('testStimulusEngineTrailerII.atest')
     testSetPercentage = getResultPercentage(testSetData)
     resultSet.append(["Stimulus Engine (Trailer with different Agent Views)", testSetPercentage, copy.deepcopy(testSetData)]) 
-    
-    
+     
     #Now try it with no targetagent
-    #print("Stimulus Engine (Trailer with no target agents)")
-    #testSetData = testStimulusEngineTrailer3()
-    #testSetPercentage = getResultPercentage(testSetData)
-    #resultSet.append(["Stimulus Engine (Trailer with no target agents)", testSetPercentage, copy.deepcopy(testSetData)])
-
+    print("Stimulus Engine (Trailer with no target agents)")
+    testSetData = testStimulusEngineTrailer3()
+    testSetPercentage = getResultPercentage(testSetData)
+    resultSet.append(["Stimulus Engine (Trailer with no target agents)", testSetPercentage, copy.deepcopy(testSetData)])
     
     #Check to see if conditional stimuli are processed
     print("Stimulus Engine (Single Free Stimuli)")
@@ -1351,14 +1443,38 @@ def runTests(css):
     testSetPercentage = getResultPercentage(testSetData)
     resultSet.append(["Stimulus Engine (Conditional Stimuli, all agents)", testSetPercentage, copy.deepcopy(testSetData)])
 
-    '''
+
     #testDescriptorSimple
     #Now do the internationalized descriptor
     testSetData = testDescriptorSimpleDirect()
     testSetPercentage = getResultPercentage(testSetData)
     resultSet.append(["Internationalized Descriptor", testSetPercentage, copy.deepcopy(testSetData)])
-    '''
 
+    
+    if serverURL is not None:
+        #Now do the internationalized descriptor
+        testSetData = testServerAPIStartup(serverURL, dbConnectionString, persistenceType, repoLocations,  validate) 
+        testSetPercentage = getResultPercentage(testSetData)
+        resultSet.append(["API - /admin/start", testSetPercentage, copy.deepcopy(testSetData)])
+        
+        #At this point, we need to wait for the server to be fully up before continuing
+        serverStartupStatus = None
+        statusURL = serverURL + "/admin/status"
+        try:
+            while serverStartupStatus != 200:
+                try:
+                    #urllib GET request
+                    statusRequest = urllib.request.urlopen(statusURL)  
+                    serverStartupStatus = statusRequest.code
+                except Exception as e:
+                    if e.code == 503:
+                        time.sleep(10.0)   
+                    elif e.code == 500:
+                        raise e
+            resultSet.append(['API - /admin/status', 100, [[1, 'Server Status', 'True', 'True', '']]])
+        except Exception as e:
+            resultSet.append(['API - /admin/status', 0, [[1, 'Server Status', 'False', 'True', '']]])
+    
     return resultSet
     #Graph.logQ.put( [logType , logLevel.DEBUG , method , "exiting"])
 
@@ -1640,7 +1756,7 @@ def publishResults(testReports, css, fileName, titleText):
     fileObject.close()
 
 
-def smokeTestSet(persistence, lLevel, css, profileName, persistenceArg = None, persistenceType = None, createTestDatabase = False, repoLocations = [],  validate = False):
+def smokeTestSet(persistence, lLevel, css, profileName, persistenceArg = None, persistenceType = None, createTestDatabase = False, repoLocations = [[]],  validate = False, serverURL = None):
     '''
     repoLocations = a list of all of the filesystem location that that compose the repository.
     useDeaultSchema.  I True, then load the 'default schema' of Graphyne
@@ -1693,17 +1809,26 @@ def smokeTestSet(persistence, lLevel, css, profileName, persistenceArg = None, p
     rmlEngine.setRuntimeParam("consoleLogLevel", lLevel)
     rmlEngine.setRuntimeParam("responseQueue", responseQueue)
     
-    for repoLocation in repoLocations:
+
+    for repo in repoLocations:
+        #installFilePath = os.path.dirname(__file__)
+        userRoot =  expanduser("~")
+        repoLocationSnippet = os.path.join(*repo)
+        repoLocation = os.path.join(userRoot, repoLocationSnippet)
         rmlEngine.addRepo(repoLocation)
 
+    #Start a gpaphyne engine in the current process, for the direct control tests
     rmlEngine.validateOnLoad = validate
     rmlEngine.start()
+    
+    #start server instance in the 
+    #subprocess.run('server.py')
     
     time.sleep(300.0)
     print("...Engine Started")
     
     startTime = time.time()
-    resultSet = runTests(css)    
+    resultSet = runTests(css, serverURL, persistenceArg, persistenceType, repoLocations,  validate)    
     endTime = time.time()
     validationTime = endTime - startTime
     testReport = {"resultSet" : resultSet, "validationTime" : validationTime, "persistence" : persistence.__name__, "profileName" : profileName}     
@@ -1736,6 +1861,8 @@ if __name__ == "__main__":
     parser.add_argument("-c", "--dbtcon", type=str, help="|String| The database connection string (if a relational DB) or filename (if SQLite).\n    'none' - no persistence.  This is the default value\n    'memory' - Use SQLite in in-memory mode (connection = ':memory:')  None persistence defaults to memory id SQlite is used\n    '<valid filename>' - Use SQLite, with that file as the database\n    <filename with .sqlite as extension, but no file> - Use SQLite and create that file to use as the DB file\n    <anything else> - Presume that it is a pyodbc connection string")
     parser.add_argument("-r", "--repo", nargs='*', type=str, help="|String| One or more repository folders to be tested.  At least two required (Graphyne test repo and Intentsity Test Repo filesystem locations)")
     parser.add_argument("-v", "--val", type=str, help="|String| Sets validation of the repo.  'y' or 'n', defaults to n")
+    parser.add_argument("-u", "--url", type=str, help="|String| URL for exterlally launched server.  If none is given, then a server will be started in a subprocess, wuth the url localhost:8080.  Giving a specific url allows you to start the server in a seperate debug session and debug the server side seperately.  If you are simply running unit tests, then you can save yourself the complexity and let smoketest start the serrver on its own.")
+    parser.add_argument("-s", "--server", type=str, help="|String| Whether to test the server REST api, or skip it.  'y' or 'n'.  'y' == Yes, test the  server.  'n' == No, skip it.  If no, then the url parameter is ignored.  defaults to y")
     args = parser.parse_args()
     
     lLevel = Graph.logLevel.WARNING
@@ -1752,14 +1879,37 @@ if __name__ == "__main__":
             print("Invalid log level %s!  Permitted valies of --logl are 'warning', 'info' and 'debug'!" %args.logl)
             sys.exit()
             
+    useServer = True
+    if args.server:
+        if (args.server is None) or (args.server == 'none'):
+            pass
+        elif (args.server == 'y') or (args.server == 'Y'):
+            useServer = True
+            print("\n  -- Including REST API tests")
+        elif (args.server == 'n') or (args.server == 'N'):
+            useServer = False
+            print("\n  -- Skipping REST API tests")
+        else:
+            print("Invalid REST API server choice %s!  Permitted valies of --server are 'y', 'Y', 'n' and 'N'!" %args.logl)
+            sys.exit() 
+    
+    serverURL = None
+    if useServer == True:
+        serverURL = "http://localhost:8080"
+        if args.url:
+            if (args.url is None) or (args.url == 'none'):
+                pass
+            else:
+                serverURL = args.url
+    
     validate = False
     if args.val:
         if (args.val is None) or (args.val == 'none'):
             pass
-        elif (args.val == 'y') or (args.dbtype == 'Y'):
+        elif (args.val == 'y') or (args.val == 'Y'):
             validate = True
             print("\n  -- validate repositories")
-        elif (args.val == 'n') or (args.dbtype == 'N'):
+        elif (args.val == 'n') or (args.val == 'N'):
             validate = False
             print("\n  -- don't validate repositories")
         else:
@@ -1809,15 +1959,27 @@ if __name__ == "__main__":
             else:
                 print("  -- Using persistence type %s with connection = %s" %(args.dbtype, args.dbtcon))
 
-
+    #The relative location of Intentsity's Graphyne repo, relative to this file.  
+    testRepoRelLoc = ["Config", "Test", "TestRepository"]
+    
+    userRoot =  expanduser("~")
     installFilePath = os.path.dirname(__file__)
-    testRepo = os.path.join(installFilePath, "Config", "Test", "TestRepository")
+    installFilePathStub = installFilePath.replace(userRoot, "")
+    parsedStub = installFilePathStub.split(os.path.sep)
+    try:
+        #If installFilePath is longer than userRoot, then there will be a leading file seperator at the start of installFilePathStub
+        #  Taking the slice at zero removes this.
+        #obviously, if this file is at the user root, then userRoot == installFilePath, there will be no stray file seperator and there will be an exception
+        del parsedStub[0]
+    except: pass
+    parsedStub.extend(testRepoRelLoc)
         
     nRepoCount = 1            
-    additionalRepoToTest = [testRepo]
+    additionalRepoToTest = [parsedStub]
     if args.repo:
         for additionalRepo in args.repo:
-            additionalRepoToTest.append(additionalRepo)  
+            parsedRepoLoc = additionalRepo.split(os.path.sep)
+            additionalRepoToTest.append(parsedRepoLoc)  
             nRepoCount = nRepoCount + 1
             print("  -- repo: %s" %additionalRepo)
     print("  %s repositories (including Memetic core,  repo) are being used" %nRepoCount)
@@ -1828,19 +1990,19 @@ if __name__ == "__main__":
     try:
         if persistenceType is None:
             import Graphyne.DatabaseDrivers.NonPersistent as persistenceModule1
-            testReport = smokeTestSet(persistenceModule1, lLevel, css, "No-Persistence", dbConnectionString, persistenceType, True, additionalRepoToTest, validate)
+            testReport = smokeTestSet(persistenceModule1, lLevel, css, "No-Persistence", dbConnectionString, persistenceType, True, additionalRepoToTest, validate, serverURL)
         elif ((persistenceType == "sqlite") and (dbConnectionString== "memory")):
             import Graphyne.DatabaseDrivers.RelationalDatabase as persistenceModule2
-            testReport = smokeTestSet(persistenceModule2, lLevel, css, "sqllite", dbConnectionString, persistenceType, True, additionalRepoToTest, validate)
+            testReport = smokeTestSet(persistenceModule2, lLevel, css, "sqllite", dbConnectionString, persistenceType, True, additionalRepoToTest, validate, serverURL)
         elif persistenceType == "sqlite":
             import Graphyne.DatabaseDrivers.RelationalDatabase as persistenceModule4
-            testReport = smokeTestSet(persistenceModule4, lLevel, css, "sqllite", dbConnectionString, persistenceType, False, additionalRepoToTest, validate)
+            testReport = smokeTestSet(persistenceModule4, lLevel, css, "sqllite", dbConnectionString, persistenceType, False, additionalRepoToTest, validate, serverURL)
         else:
             import Graphyne.DatabaseDrivers.RelationalDatabase as persistenceModul3
-            testReport = smokeTestSet(persistenceModul3, lLevel, css, "sqllite", dbConnectionString, persistenceType, False, additionalRepoToTest, validate)
+            testReport = smokeTestSet(persistenceModul3, lLevel, css, "sqllite", dbConnectionString, persistenceType, False, additionalRepoToTest, validate, serverURL)
     except Exception as e:
         import Graphyne.DatabaseDrivers.RelationalDatabase as persistenceModul32
-        testReport = smokeTestSet(persistenceModul32, lLevel, css, "sqllite", dbConnectionString, persistenceType, False, additionalRepoToTest, validate)
+        testReport = smokeTestSet(persistenceModul32, lLevel, css, "sqllite", dbConnectionString, persistenceType, False, additionalRepoToTest, validate, serverURL)
     
     titleText = "Intentsity Smoke Test Suite - Results"
     publishResults([testReport], css, "IntentsityTestresult.html", titleText)
