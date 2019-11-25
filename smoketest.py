@@ -1186,7 +1186,7 @@ def testDescriptorSimpleViaSIQ():
 
 
 
-def testServerAPIStartup(serverURL = None, dbConnectionString = None, persistenceType = None, repoLocations = [[]],  validate = False):
+def testServerAPIAdminStartup(expectedCode, serverURL = None, dbConnectionString = None, persistenceType = None, repoLocations = [[]],  validate = False):
     """
         Start the server up, with the applied options.  Check to see that it has successfully started.
         validateRepository
@@ -1195,64 +1195,155 @@ def testServerAPIStartup(serverURL = None, dbConnectionString = None, persistenc
         dbConnectionString
         sqlite
     """
-    method = moduleName + '.' + 'testServerAPIStartup'
+    method = moduleName + '.' + 'testServerAPIAdminStartup'
     Graph.logQ.put( [logType , logLevel.DEBUG , method , "entering"])
     testResult = True
     
     requestURL = serverURL + "/admin/start"
+    serverStartupStatus = None
     
-    #test invalid parameter in validate repository
-    # should return a 500 error and not start
-    postFieldsDict1 = {"validateRepository" : "Notavalue"}
-    try:
-        #urllib POST request
-        request = Request(url=requestURL, data=bytes(json.dumps(postFieldsDict1), encoding='utf-8'))
-        response1 = urlopen(request).read().decode('utf8')
-        responseStr1= json.loads(response1)
-        #We should get an exception on the request, so we should not reach here
-        testResult = False
-    except Exception as e:
-        if e.code != 500:
-            #The server SHOULD return a 500 error
+    if expectedCode != 503:
+        #test invalid parameter in validate repository
+        # should return a 500 error and not start
+        postFieldsDict1 = {"validateRepository" : "Notavalue"}
+        try:
+            #urllib POST request
+            request = Request(url=requestURL, data=bytes(json.dumps(postFieldsDict1), encoding='utf-8'))
+            response1 = urlopen(request).read().decode('utf8')
+            responseStr1= json.loads(response1)
+            #We should get an exception on the request, so we should not reach here
             testResult = False
-              
-    #test invalid parameter in validate repository
-    # should return a 500 error and not start
-    postFieldsDict2 = {"validateRepository" : False, "repositories" : "notalist"}
-    try:
-        #urllib POST request
-        request = Request(url=requestURL, data=bytes(json.dumps(postFieldsDict2), encoding='utf-8'))
-        response2 = urlopen(request).read().decode('utf8')
-        responseStr2= json.loads(response2)
-        #We should get an exception on the request, so we should not reach here
-        testResult = False
-    except Exception as e:
-        if e.code != 400:
-            #The server SHOULD return a 400 error when repositories does not contain a nested list
+            serverStartupStatus = 500
+        except Exception as e:
+            if e.code != 500:
+                #The server SHOULD return a 500 error
+                testResult = False
+            serverStartupStatus = e.code
+                  
+        #test invalid parameter in validate repository
+        # should return a 500 error and not start
+        postFieldsDict2 = {"validateRepository" : False, "repositories" : "notalist"}
+        try:
+            #urllib POST request
+            request = Request(url=requestURL, data=bytes(json.dumps(postFieldsDict2), encoding='utf-8'))
+            response2 = urlopen(request).read().decode('utf8')
+            responseStr2= json.loads(response2)
+            #We should get an exception on the request, so we should not reach here
             testResult = False
+            serverStartupStatus = 500
+        except Exception as e:
+            if e.code != 500:
+                #The server SHOULD return a 500 error when repositories does not contain a nested list
+                testResult = False
+            serverStartupStatus = e.code
+        
+        
+        #test invalid parameter in repositories.  Should be nested list
+        # should return a 500 error and not start
+        postFieldsDict3 = {"validateRepository" : False, "repositories" : ["notalist"]}
+        try:
+            #urllib POST request
+            request = Request(url=requestURL, data=bytes(json.dumps(postFieldsDict3), encoding='utf-8'))
+            response3 = urlopen(request).read().decode('utf8')
+            responseStr3= json.loads(response3)
+            #We should get an exception on the request, so we should not reach here
+            testResult = False
+            serverStartupStatus = 500
+        except Exception as e:
+            if e.code != 500:
+                #The server SHOULD return a 400 error when repositories does not contain a nested list
+                testResult = False 
+            serverStartupStatus = e.code
+        
+        #This should work, provided that the command line arguments are valid
+        postFieldsDict5 = {"validateRepository" : validate, "repositories" : repoLocations, "dbConnectionString" : dbConnectionString, "persistenceType" : persistenceType}
+        try:
+            #urllib POST request
+            request = Request(url=requestURL, data=bytes(json.dumps(postFieldsDict5), encoding='utf-8'))
+            response5 = urlopen(request).read().decode('utf8')
+            serverStartupStatus = 200
+        except Exception as e:
+            testResult = False
+            serverStartupStatus = 500
+    else:
+        #This should work, provided that the command line arguments are valid
+        postFieldsDict5 = {"validateRepository" : validate, "repositories" : repoLocations, "dbConnectionString" : dbConnectionString, "persistenceType" : persistenceType}
+        try:
+            #urllib POST request
+            request = Request(url=requestURL, data=bytes(json.dumps(postFieldsDict5), encoding='utf-8'))
+            response5 = urlopen(request).read().decode('utf8')
+            serverStartupStatus = 202
+        except Exception as e:
+            if e.code != 503:
+                testResult = False
+            serverStartupStatus = 500
     
     
-    #test invalid parameter in repositories.  Should be nested list
-    # should return a 500 error and not start
-    postFieldsDict3 = {"validateRepository" : False, "repositories" : ["notalist"]}
+    Graph.logQ.put( [logType , logLevel.DEBUG , method , "exiting"])
+    
+    resultSet = []
+    testcase = "API - /admin/start"
+    testResult = str(testResult)
+    expectedResult = str('True')
+    expectedCodeS = convertIntListToString(expectedCode)
+    statusString = "Expected Status: %s, Status: %s" %(expectedCodeS, serverStartupStatus)
+    results = [1, testcase, testResult, expectedResult, [statusString]]
+    resultSet.append(results)
+    return resultSet
+
+
+
+def testServerAPIAdminStatus(testcase, expectedCode, waitforSuccess, serverURL = None):
+    """
+        Check to see that the server status works.
+        This test runs in a few places, to probe the status at different points in the server life cycle
+        Test Cases:
+            testcase = "prestart"
+            expectedResult = [503]
+            waitforSuccess = False
+            #Should ale=ways return 503, because the server has not yet started
+            
+            testcase = "startup"
+            expectedResult = [503, 200]
+            waitforSuccess = True
+            #Might initially return 503, depending on how quickly the server starts.  Should eventually return 200
+    """
+    method = moduleName + '.' + 'testServerAPIAdminStatus'
+    Graph.logQ.put( [logType , logLevel.DEBUG , method , "entering"])
+    testResult = True
+    
+    serverStartupStatus = None
+    statusURL = serverURL + "/admin/status"
     try:
-        #urllib POST request
-        request = Request(url=requestURL, data=bytes(json.dumps(postFieldsDict3), encoding='utf-8'))
-        response3 = urlopen(request).read().decode('utf8')
-        responseStr3= json.loads(response3)
-        #We should get an exception on the request, so we should not reach here
-        testResult = False
+        #urllib GET request
+        statusRequest = urllib.request.urlopen(statusURL)  
+        serverStartupStatus = statusRequest.code
     except Exception as e:
-        if e.code != 400:
-            #The server SHOULD return a 400 error when repositories does not contain a nested list
-            testResult = False 
-    
-    #This should work, provided that the command line arguments are valid
-    postFieldsDict5 = {"validateRepository" : validate, "repositories" : repoLocations, "dbConnectionString" : dbConnectionString, "persistenceType" : persistenceType}
+        if e.code not in expectedCode:
+            testResult = False   
+        elif e.code == 500:
+            testResult = False
+            
+            
     try:
-        #urllib POST request
-        request = Request(url=requestURL, data=bytes(json.dumps(postFieldsDict5), encoding='utf-8'))
-        response5 = urlopen(request).read().decode('utf8')
+        timeoutVal = 300 #Five minutes
+        currTime = 0
+        if waitforSuccess == True:
+            #At this point, we need to wait for the server to be fully up before continuing
+            while serverStartupStatus != 200:
+                try:
+                    #urllib GET request
+                    statusRequest = urllib.request.urlopen(statusURL)  
+                    serverStartupStatus = statusRequest.code
+                except Exception as e:
+                    if currTime > timeoutVal:
+                        #We have reached timeout and the server is not started
+                        raise e
+                    if e.code == 503:
+                        time.sleep(10.0) 
+                        currTime = currTime + 10  
+                    elif e.code == 500:
+                        raise e
     except Exception as e:
         testResult = False
     
@@ -1260,10 +1351,53 @@ def testServerAPIStartup(serverURL = None, dbConnectionString = None, persistenc
     Graph.logQ.put( [logType , logLevel.DEBUG , method , "exiting"])
     
     resultSet = []
-    testcase = "API - Engine Startup"
     testResult = str(testResult)
     expectedResult = str('True')
-    results = [1, testcase, testResult, expectedResult, ""]
+    expectedCodeS = convertIntListToString(expectedCode)
+    statusString = "Expected Status: %s, Status: %s" %(expectedCodeS, serverStartupStatus)
+    results = [1, testcase, testResult, expectedResult, [statusString]]
+    resultSet.append(results)
+    return resultSet
+
+
+
+def testServerAPIAdminStop(testcase, expectedCode, serverURL = None):
+    """
+        Check to see that the server status works.
+        This test stops a currently running server
+        Test Cases:
+            testcase = "simplestop"
+            expectedResult = [200]
+            #Should ale=ways return 503, because the server has not yet started
+            
+            testcase = "already stopping"
+            expectedResult = [202, 200]
+            #Might return 200, depending on how quickly the server stops.  Otherwise, 202
+    """
+    method = moduleName + '.' + 'testServerAPIAdminStop'
+    Graph.logQ.put( [logType , logLevel.DEBUG , method , "entering"])
+    testResult = True
+
+    serverStartupStatus = None
+    statusURL = serverURL + "/admin/stop"
+    try:
+        #urllib GET request
+        statusRequest = urllib.request.urlopen(statusURL)  
+        serverStartupStatus = statusRequest.code
+    except Exception as e:
+        if e.code not in expectedCode:
+            testResult = False   
+        elif e.code == 500:
+            testResult = False
+    
+    Graph.logQ.put( [logType , logLevel.DEBUG , method , "exiting"])
+    
+    resultSet = []
+    testResult = str(testResult)
+    expectedResult = str('True')
+    expectedCodeS = convertIntListToString(expectedCode)
+    statusString = "Expected Status: %s, Status: %s" %(expectedCodeS, serverStartupStatus)
+    results = [1, testcase, testResult, expectedResult, [statusString]]
     resultSet.append(results)
     return resultSet
 
@@ -1301,6 +1435,22 @@ def getResponseFromStimulusEngine(returnWholeReport = False):
         queueResults.append("***")
     return queueResults
 
+
+
+def convertIntListToString(intList):
+    returnString = "["
+    nnTh = 0
+    if type(intList) == type([]):
+        for intVal in intList:
+            if nnTh > 0:
+                returnString = "%s, %s" %(returnString, intVal)
+            else:
+                returnString = "%s%s" %(returnString, intVal)
+            nnTh = nnTh +1
+    else:
+        returnString = "%s%s" %(returnString, intList)
+    returnString = "%s]" %(returnString)
+    return returnString
 
 
 
@@ -1354,7 +1504,7 @@ def runTests(css, serverURL = None, dbConnectionString = None, persistenceType =
     startTime = time.time()
     resultSet = []
 
-
+    '''
     #First Action Queue Test
     print("Action Engine (Action Queue)")
     testSetData = testActionQueue("AESerialization_Output.atest", "AESerialization_Input.atest", True)
@@ -1450,30 +1600,42 @@ def runTests(css, serverURL = None, dbConnectionString = None, persistenceType =
     testSetPercentage = getResultPercentage(testSetData)
     resultSet.append(["Internationalized Descriptor", testSetPercentage, copy.deepcopy(testSetData)])
 
+    '''
     
     if serverURL is not None:
-        #Now do the internationalized descriptor
-        testSetData = testServerAPIStartup(serverURL, dbConnectionString, persistenceType, repoLocations,  validate) 
-        testSetPercentage = getResultPercentage(testSetData)
-        resultSet.append(["API - /admin/start", testSetPercentage, copy.deepcopy(testSetData)])
+        #Check Status before statting for the first time
+        testSetDataStatus1 = testServerAPIAdminStatus("prestart", [503], False, serverURL)
+        testSetPercentageStatus1 = getResultPercentage(testSetDataStatus1)
         
-        #At this point, we need to wait for the server to be fully up before continuing
-        serverStartupStatus = None
-        statusURL = serverURL + "/admin/status"
-        try:
-            while serverStartupStatus != 200:
-                try:
-                    #urllib GET request
-                    statusRequest = urllib.request.urlopen(statusURL)  
-                    serverStartupStatus = statusRequest.code
-                except Exception as e:
-                    if e.code == 503:
-                        time.sleep(10.0)   
-                    elif e.code == 500:
-                        raise e
-            resultSet.append(['API - /admin/status', 100, [[1, 'Server Status', 'True', 'True', '']]])
-        except Exception as e:
-            resultSet.append(['API - /admin/status', 0, [[1, 'Server Status', 'False', 'True', '']]])
+        #Now do the internationalized descriptor
+        testSetDataStart1 = testServerAPIAdminStartup(200, serverURL, dbConnectionString, persistenceType, repoLocations,  validate) 
+        testSetPercentageStart1 = getResultPercentage(testSetDataStart1)
+        
+        #Make sure that we can ask the current status and that it delivers a proper calue
+        testSetDataStatus2 = testServerAPIAdminStatus("startup", [503, 200], True, serverURL)
+        testSetPercentageStatus2 = getResultPercentage(testSetDataStatus2)
+        
+        #The server is running, so this should return 503
+        testSetDataStart2 = testServerAPIAdminStartup(503, serverURL, dbConnectionString, persistenceType, repoLocations,  validate) 
+        testSetPercentageStart2 = getResultPercentage(testSetDataStart2)
+        
+        #Now to stop the server for the first time
+        testSetDataStop1 = testServerAPIAdminStop("simplestop", [200], serverURL)
+        testSetPercentageStop1 = getResultPercentage(testSetDataStop1)
+        #Don't wait around.  Just stop it.
+        testSetDataStop2 = testServerAPIAdminStop("already stopping", [202, 200], serverURL)
+        testSetPercentageStop2 = getResultPercentage(testSetDataStop2)
+                
+        
+        #Report on the startup, shutdown and status tests
+        resultSet.append(["API - /admin/start - cold start", testSetPercentageStart1, copy.deepcopy(testSetDataStart1)])
+        resultSet.append(["API - /admin/start - server alread running", testSetPercentageStart2, copy.deepcopy(testSetDataStart2)])
+        
+        resultSet.append(["API - /admin/status - prestart", testSetPercentageStatus1, copy.deepcopy(testSetDataStatus1)])
+        resultSet.append(["API - /admin/status - startup", testSetPercentageStatus2, copy.deepcopy(testSetDataStatus2)])
+        
+        resultSet.append(["API - /admin/stop - cold start", testSetPercentageStop1, copy.deepcopy(testSetDataStop1)])
+        resultSet.append(["API - /admin/stop - server already stopping", testSetPercentageStop2, copy.deepcopy(testSetDataStop1)])
     
     return resultSet
     #Graph.logQ.put( [logType , logLevel.DEBUG , method , "exiting"])

@@ -158,8 +158,8 @@ class EngineStarter(threading.Thread):
                     alertMessage = "%s, %s" %(errorID, errorMsg)
                     rmlEngine.startupState.FAILED_TO_START
                     engineStatus.setAlert(alertMessage)
-            elif engineStatus.serverOn == False:
-                engineStartQueue.push([202, "Command ignored.  Server already running"])
+            elif (engineStatus.serverOn == True) and ((engineStatus.busy == True)):
+                engineStartQueue.push([202, "Command ignored.  Server currently shutting down"])
             elif engineStatus.serverOn == False:
                 engineStartQueue.push([202, "Command ignored.  Server in busy state"])
             else:
@@ -509,12 +509,18 @@ def server_static():
 def status():
     global engineStatus
     try:
-        if engineStatus.serverOn == True:
+        if (engineStatus.serverOn == True) and (engineStatus.busy == False) :
             response.status = 200
             returnStr = "Intentsity Engine Status: Ready"
-        else:
+        elif (engineStatus.serverOn == True) and (engineStatus.busy == True) :
+            response.status = 503
+            returnStr = "Intentsity Engine Status: Shutting Down"
+        elif (engineStatus.serverOn == False) and (engineStatus.busy == True) :
             response.status = 503
             returnStr = "Intentsity Engine Status: Starting"
+        elif (engineStatus.serverOn == False) and (engineStatus.busy == False) :
+            response.status = 503
+            returnStr = "Intentsity Engine Status: Not Running"
         return returnStr
     except Exception as e:
         response.status = 500
@@ -672,30 +678,44 @@ def start():
                                             'TestPackageStimulusEngine.SimpleStimuli.ADescriptor_AnotherPage']}
         """
         
-        #Set up the persistence of rmlEngine.  It defaults to no persistence
-        global engineStartQueue
-        engineStartQueue.put([dbConnectionString, persistenceType])
-        starter = EngineStarter()
-        starter.run()
+        if (engineStatus.serverOn == True) and (engineStatus.busy == False) :
+            response.status = 202
+            returnStr = "Engine already running.  Start command ignored"
+            return returnStr
+        elif (engineStatus.serverOn == True) and (engineStatus.busy == True) :
+            response.status = 202
+            returnStr = "Engine busy with shutdown.  Start command ignored"
+            return returnStr
+        elif (engineStatus.serverOn == False) and (engineStatus.busy == True) :
+            response.status = 202
+            returnStr = "Engine busy with startup.  Start command ignored"
+            return returnStr
+        else:
         
-        time.sleep(3.0)  #Give the EngineStarter instance a couple of seconds to read the queue and respond
-        returnParams = engineStartQueue.get_nowait()
-                
-        response.status = returnParams[0]
+            #Set up the persistence of rmlEngine.  It defaults to no persistence
+            global engineStartQueue
+            engineStartQueue.put([dbConnectionString, persistenceType])
+            starter = EngineStarter()
+            starter.run()
+            
+            time.sleep(3.0)  #Give the EngineStarter instance a couple of seconds to read the queue and respond
+            returnParams = engineStartQueue.get_nowait()
+                    
+            response.status = returnParams[0]
         return(returnParams[1])
     except json.decoder.JSONDecodeError as unusedE:
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
         returnStr = "Intentsity failed to start due to malformed json payload in POST body:  %s, %s." %(errorID, errorMsg)
-        response.status = 400
+        response.status = 500
         return returnStr
     except ValueError as unusedE:
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
         returnStr = "Intentsity failed to start:  %s, %s" %(errorID, errorMsg)
-        response.status = 400
+        response.status = 500
         return returnStr
     except Exception as unusedE:
         fullerror = sys.exc_info()
@@ -707,7 +727,7 @@ def start():
     
     
     
-@route('/admin/stop')
+@route('/admin/stop', method='GET')
 def stopServer():
     global rmlEngine
     global engineStatus
@@ -715,6 +735,7 @@ def stopServer():
         if (engineStatus.busy == False) and (engineStatus.serverOn == True):
             engineStatus.toggleOff()
             engineStatus.clearAlert()
+            rmlEngine.shutdown()
             rmlEngine = Engine.Engine()
             returnStr = "Stopped..."
             response.status = 200
