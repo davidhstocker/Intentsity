@@ -3,7 +3,8 @@ Created on June 13, 2018
 
 @author: David Stocker
 '''
-import sys
+#import sys
+import os
 import importlib
 
 import Graphyne.Graph as Graph
@@ -11,7 +12,6 @@ import Graphyne.Graph as Graph
     
     
 #Globals
-moduleName = 'PluginFacade'
 #rml = RML()
 engineServices = []
 archiveServices = []
@@ -43,7 +43,7 @@ def initPlugins(plugins):
                             'PluginParemeters': {'heatbeatTick' : 1, 'broadcasterID' : 'Test'}
                         }
         """
-    method = moduleName + '.initPlugins'
+    method = os.path.splitext(os.path.basename(__file__))[0] + '.initPlugins'
     #Graph.logQ.put( [logType , logLevel.DEBUG , method , "entering"])
     Graph.logQ.put( [logType , logLevel.INFO , method , 'Starting to intialize the plugins'])
  
@@ -69,7 +69,7 @@ def initPlugins(plugins):
         
         dtParams = plugin["PluginParemeters"]
         plugin['module'] = mod
-        plugin['moduleName'] = moduleName
+        plugin['moduleName'] = os.path.splitext(os.path.basename(__file__))[0]
         plugin['params'] = dtParams
 
         

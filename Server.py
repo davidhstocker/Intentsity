@@ -12,13 +12,13 @@ import os
 import sys
 import threading
 import queue
+import uuid
 from os.path import expanduser
 from Intentsity import Engine
 from Intentsity import Exceptions
-import Graphyne.Graph as Graph
+import argparse
         
-
-
+basePort = 8080
 
 class IntentTagSchema(object):  
     """
@@ -134,12 +134,14 @@ class EngineStarter(threading.Thread):
     def run(self):
         try:
             global engineStatus
+            global basePort
             if (engineStatus.busy == False) and (engineStatus.serverOn == False):
                 engineStatus.busyOn()
                 engineStatus.clearAlert()
                 global engineStartQueue
                 startParams = engineStartQueue.get_nowait()
                 rmlEngine.setPersistence(startParams[0], startParams[1])   
+                rmlEngine.setBasePort(basePort)
                     
                 #let url handler return 
                 engineStartQueue.put_nowait([200, "Starting..."])
@@ -381,61 +383,62 @@ def setURLDefinitions(memePath, rHandlerParameters, rReturnParameters, rPostPara
         if urlType not in validTypes:
             errorMsg = "%s not one of valid types %s" %(urlType, validTypes)
             raise ValueError(errorMsg)
-        unusedReturnResults = Engine.Graph.api.setEntityPropertyValue(entityUUID, "URLType", urlType)
+        unusedReturnResults = rmlEngine.api.setEntityPropertyValue(entityUUID, "URLType", urlType)
         '''
         
         'list'
         #set appropriate properties
+        global rmlEngine
         if rHandlerParameters is not None:
-            unusedReturnResults = Engine.Graph.api.sourceMemePropertySet(memePath, "HandlerParameters", rHandlerParameters['parameters'], 'list')
-            unusedReturnResults = Engine.Graph.api.sourceMemePropertySet(memePath, "HandlerParameterDescriptions", rHandlerParameters['descriptions'], 'list')
+            unusedReturnResults = rmlEngine.api.sourceMemePropertySet(memePath, "HandlerParameters", rHandlerParameters['parameters'], 'list')
+            unusedReturnResults = rmlEngine.api.sourceMemePropertySet(memePath, "HandlerParameterDescriptions", rHandlerParameters['descriptions'], 'list')
         else:
             #Remove these properties if they are in the meme.  
             try:
-                unusedReturnResults = Engine.Graph.api.sourceMemePropertyRemove(memePath, "HandlerParameters")
+                unusedReturnResults = rmlEngine.api.sourceMemePropertyRemove(memePath, "HandlerParameters")
             except: 
                 pass
             try:
-                unusedReturnResults = Engine.Graph.api.sourceMemePropertyRemove(memePath, "HandlerParameterDescriptions")
+                unusedReturnResults = rmlEngine.api.sourceMemePropertyRemove(memePath, "HandlerParameterDescriptions")
             except: 
                 pass            
 
         
         if rReturnParameters is not None:
-            unusedReturnResults = Engine.Graph.api.sourceMemePropertySet(memePath, "ReturnParameters", rReturnParameters['parameters'], 'list')
-            unusedReturnResults = Engine.Graph.api.sourceMemePropertySet(memePath, "ReturnParameterTypes", rReturnParameters['types'], 'list')
-            unusedReturnResults = Engine.Graph.api.sourceMemePropertySet(memePath, "ReturnParameterDescriptions", rReturnParameters['descriptions'], 'list')
+            unusedReturnResults = rmlEngine.api.sourceMemePropertySet(memePath, "ReturnParameters", rReturnParameters['parameters'], 'list')
+            unusedReturnResults = rmlEngine.api.sourceMemePropertySet(memePath, "ReturnParameterTypes", rReturnParameters['types'], 'list')
+            unusedReturnResults = rmlEngine.api.sourceMemePropertySet(memePath, "ReturnParameterDescriptions", rReturnParameters['descriptions'], 'list')
         else:
             #Remove these properties if they are in the meme.  
             try:
-                unusedReturnResults = Engine.Graph.api.sourceMemePropertyRemove(memePath, "ReturnParameters")
+                unusedReturnResults = rmlEngine.api.sourceMemePropertyRemove(memePath, "ReturnParameters")
             except: 
                 pass
             try:
-                unusedReturnResults = Engine.Graph.api.sourceMemePropertyRemove(memePath, "ReturnParameterTypes")
+                unusedReturnResults = rmlEngine.api.sourceMemePropertyRemove(memePath, "ReturnParameterTypes")
             except: 
                 pass  
             try:
-                unusedReturnResults = Engine.Graph.api.sourceMemePropertyRemove(memePath, "ReturnParameterDescriptions")
+                unusedReturnResults = rmlEngine.api.sourceMemePropertyRemove(memePath, "ReturnParameterDescriptions")
             except: 
                 pass  
             
         if rPostParameters is not None:
-            unusedReturnResults = Engine.Graph.api.sourceMemePropertySet(memePath, "POSTParameters", rPostParameters['parameters'], 'list')
-            unusedReturnResults = Engine.Graph.api.sourceMemePropertySet(memePath, "POSTParameterTypes", rPostParameters['types'], 'list')
-            unusedReturnResults = Engine.Graph.api.sourceMemePropertySet(memePath, "POSTParameterDescriptions", rPostParameters['descriptions'], 'list')
+            unusedReturnResults = rmlEngine.api.sourceMemePropertySet(memePath, "POSTParameters", rPostParameters['parameters'], 'list')
+            unusedReturnResults = rmlEngine.api.sourceMemePropertySet(memePath, "POSTParameterTypes", rPostParameters['types'], 'list')
+            unusedReturnResults = rmlEngine.api.sourceMemePropertySet(memePath, "POSTParameterDescriptions", rPostParameters['descriptions'], 'list')
         else:
             #Remove these properties if they are in the meme.  
             try:
-                unusedReturnResults = Engine.Graph.api.sourceMemePropertyRemove(memePath, "POSTParameters")
+                unusedReturnResults = rmlEngine.api.sourceMemePropertyRemove(memePath, "POSTParameters")
             except: 
                 pass
             try:
-                unusedReturnResults = Engine.Graph.api.sourceMemePropertyRemove(memePath, "POSTParameterTypes")
+                unusedReturnResults = rmlEngine.api.sourceMemePropertyRemove(memePath, "POSTParameterTypes")
             except: 
                 pass  
             try:
-                unusedReturnResults = Engine.Graph.api.sourceMemePropertyRemove(memePath, "POSTParameterDescriptions")
+                unusedReturnResults = rmlEngine.api.sourceMemePropertyRemove(memePath, "POSTParameterDescriptions")
             except: 
                 pass 
             
@@ -454,19 +457,19 @@ def addMolecule(memeType, moleculeType, technicalName, creatorID, ownerID, rawRe
             message strings look like.  The "addXMolecule" handlers wrap this method
     """
     try:
-        newUUID = Engine.Graph.api.createEntityFromMeme(memeType)
-        
+        global rmlEngine
+        newUUID = rmlEngine.api.createEntityFromMeme(memeType)
         #Agent.Molecule is created with the default controller.  Break the link and replace it with the desired controller
-        defaultControllerUUID = Engine.Graph.api.createEntityFromMeme("Agent.DefaultController")
-        unusedReturnResults = Engine.Graph.api.removeEntityLink(newUUID, defaultControllerUUID)
-        unusedReturnResults = Engine.Graph.api.addEntityLink(newUUID, ownerID)
-        unusedReturnResults = Engine.Graph.api.addEntityLink(newUUID, creatorID)
-        unusedReturnResults = Engine.Graph.api.setEntityPropertyValue(newUUID, "technicalName", technicalName)
+        defaultControllerUUID = rmlEngine.api.createEntityFromMeme("Agent.DefaultController")
+        unusedReturnResults = rmlEngine.api.removeEntityLink(newUUID, defaultControllerUUID)
+        unusedReturnResults = rmlEngine.api.addEntityLink(newUUID, ownerID)
+        unusedReturnResults = rmlEngine.api.addEntityLink(newUUID, creatorID)
+        unusedReturnResults = rmlEngine.api.setEntityPropertyValue(newUUID, "technicalName", technicalName)
         
         #This property is purely optional and won't affect entity creation    
         try:
             description = rawRequest['description']
-            unusedReturnResults = Engine.Graph.api.setEntityPropertyValue(newUUID, "description", description)
+            unusedReturnResults = rmlEngine.api.setEntityPropertyValue(newUUID, "description", description)
         except:
             pass
         
@@ -521,11 +524,13 @@ def status():
         elif (engineStatus.serverOn == False) and (engineStatus.busy == False) :
             response.status = 503
             returnStr = "Intentsity Engine Status: Not Running"
-        return returnStr
+        response.body = json.dumps({"status": returnStr})
+        return response
     except Exception as e:
         response.status = 500
         returnStr = "Intentsity Engine Status: Failed to Start"
-        return returnStr
+        response.body = json.dumps({"status": returnStr})
+        return response
 
 
 
@@ -681,15 +686,18 @@ def start():
         if (engineStatus.serverOn == True) and (engineStatus.busy == False) :
             response.status = 202
             returnStr = "Engine already running.  Start command ignored"
-            return returnStr
+            response.body = json.dumps({"status": returnStr})
+            return response
         elif (engineStatus.serverOn == True) and (engineStatus.busy == True) :
             response.status = 202
             returnStr = "Engine busy with shutdown.  Start command ignored"
-            return returnStr
+            response.body = json.dumps({"status": returnStr})
+            return response
         elif (engineStatus.serverOn == False) and (engineStatus.busy == True) :
             response.status = 202
             returnStr = "Engine busy with startup.  Start command ignored"
-            return returnStr
+            response.body = json.dumps({"status": returnStr})
+            return response
         else:
         
             #Set up the persistence of rmlEngine.  It defaults to no persistence
@@ -702,28 +710,32 @@ def start():
             returnParams = engineStartQueue.get_nowait()
                     
             response.status = returnParams[0]
-        return(returnParams[1])
+            response.body = json.dumps({"status": returnParams[1]})
+        return response
     except json.decoder.JSONDecodeError as unusedE:
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
         returnStr = "Intentsity failed to start due to malformed json payload in POST body:  %s, %s." %(errorID, errorMsg)
         response.status = 500
-        return returnStr
+        response.body = json.dumps({"status": returnStr})
+        return response
     except ValueError as unusedE:
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
         returnStr = "Intentsity failed to start:  %s, %s" %(errorID, errorMsg)
         response.status = 500
-        return returnStr
+        response.body = json.dumps({"status": returnStr})
+        return response
     except Exception as unusedE:
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
         returnStr = "Intentsity failed to start:  %s, %s" %(errorID, errorMsg)
         response.status = 500
-        return returnStr
+        response.body = json.dumps({"status": returnStr})
+        return response
     
     
     
@@ -739,27 +751,32 @@ def stopServer():
             rmlEngine = Engine.Engine()
             returnStr = "Stopped..."
             response.status = 200
-            return returnStr
+            response.body = json.dumps({"status": returnStr})
+            return response
         elif (engineStatus.busy == True) and (engineStatus.serverOn == False):
             returnStr = "Command ignored.  Server in bootstrap.  Please wait until running before stopping or call /admin/forcestop API handler"
             response.status = 202
-            return returnStr
+            response.body = json.dumps({"status": returnStr})
+            return response
         elif (engineStatus.busy == False) and (engineStatus.serverOn == False):
             returnStr = "Command ignored.  Server was not started."
             response.status = 202
-            return returnStr
+            response.body = json.dumps({"status": returnStr})
+            return response
         else:
             #This really should not happen, unless we've been careful  about the busy state handling.
             returnStr = "Command ignored.  Server in busy state"
             response.status = 202
-            return returnStr
+            response.body = json.dumps({"status": returnStr})
+            return response
     except Exception as unusedE:
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
         returnStr = "Failed to stop Intentsity engine.  %s, %s" %(errorID, errorMsg)
         response.status = 500
-        return returnStr
+        response.body = json.dumps({"status": returnStr})
+        return response
     
     
     
@@ -774,18 +791,21 @@ def forceStopServer():
             rmlEngine = Engine.Engine()
             returnStr = "Stopped..."
             response.status = 200
-            return returnStr
+            response.body = json.dumps({"status": returnStr})
+            return response
         elif (engineStatus.busy == True) and (engineStatus.serverOn == False):
             engineStatus.toggleOff()
             engineStatus.clearAlert()
             rmlEngine = Engine.Engine()
             returnStr = "Force stopped server in bootstrap..."
             response.status = 200
-            return returnStr
+            response.body = json.dumps({"status": returnStr})
+            return response
         elif (engineStatus.busy == False) and (engineStatus.serverOn == False):
             returnStr = "Command ignored.  Server was not started."
             response.status = 202
-            return returnStr
+            response.body = json.dumps({"status": returnStr})
+            return response
         else:
             #This really should not happen, unless we've been careful  about the busy state handling.
             #  But this gives us a rock crusher workaround for hung state servers
@@ -794,14 +814,195 @@ def forceStopServer():
             rmlEngine = Engine.Engine()
             returnStr = "Force stopped server in unknown busy state..."
             response.status = 200
-            return returnStr
+            response.body = json.dumps({"status": returnStr})
+            return response
     except Exception as unusedE:
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
         returnStr = "Failed to stop Intentsity engine.  %s, %s" %(errorID, errorMsg)
         response.status = 500
+        response.body = json.dumps({"status": returnStr})
+        return response
+    
+    
+@route('/admin/registerOwner', method='POST')
+def registerOwner():
+    global rmlEngine
+    global engineStatus
+    try:
+        
+        rawRequest = request.POST.dict 
+        
+        dataCCallbackURL = None
+        try:
+            dataCCallbackURL = rawRequest["stimulusCallbackURL"]
+        except KeyError:
+            pass
+        except Exception as e:
+            raise e
+        
+        cCallbackFormat = "RawJSON"
+        try:
+            dataCCallbackURL = rawRequest["stimulusCallbackURL"]
+            cCallbackFormat = rawRequest["stimulusPreferredFormat"]
+        except KeyError:
+            pass
+        except Exception as e:
+            raise e
+        
+        newUUID = rmlEngine.api.createEntityFromMeme("Agent.Controller")
+        
+        if dataCCallbackURL is not None:
+            rmlEngine.api.addEntityStringProperty(newUUID, "stimulusCallbackURL", dataCCallbackURL)
+        
+        response.body = json.dumps({"ownerUUID": newUUID})
+        response.status = 200
+        return response
+    except Exception as unusedE: 
+        fullerror = sys.exc_info()
+        errorID = str(fullerror[0])
+        errorMsg = str(fullerror[1])
+        returnStr = "Failed to create new Agent.Controller Entity.  %s, %s" %(errorID, errorMsg)
+        response.status = 500
         return returnStr
+    
+    
+#Graph Methods - These handlers expose the Graphyene API via REST
+@route('/modeling/registerCreator', method='POST')
+def registerCreator():
+    
+    try:
+        
+        rawRequest = request.POST.dict 
+        
+        try:
+            dataCCallbackURL = rawRequest["dataCallbackURL"]
+        except KeyError:
+            raise Exceptions.MismatchedPOSTParametersError("Creator entity has no data callback url (dataCallbackURL) POST request parameter.  Entity not created")
+        except Exception as e:
+            raise e
+        
+        try:
+            stimulusCCallbackURL = rawRequest["stimulusCallbackURL"]
+        except KeyError:
+            raise Exceptions.MismatchedPOSTParametersError("Creator entity has no data callback url (stimulusCallbackURL) POST request parameter.  Entity not created")
+        except Exception as e:
+            raise e
+        
+        newUUID = rmlEngine.api.createEntityFromMeme("Agent.Creator")
+        
+        response.body = json.dumps({"ownerUUID": newUUID})
+        response.status = 200
+        return response
+    except Exception as unusedE: 
+        fullerror = sys.exc_info()
+        errorID = str(fullerror[0])
+        errorMsg = str(fullerror[1])
+        returnStr = "Failed to create new Agent.Creator Entity.  %s, %s" %(errorID, errorMsg)
+        response.body = json.dumps({"status": returnStr})
+        response.status = 500
+        return response
+    
+    
+@route('/admin/registerListener', method='POST')
+def registerListener():
+    global rmlEngine
+    global engineStatus
+    try:
+        
+        rawRequest = request.POST.dict 
+        
+        try:
+            creatorUUID = rawRequest["creatorUUID"]
+        except KeyError:
+            raise Exceptions.MismatchedPOSTParametersError("Cannot register listener without a valid creatorUUID parameter.  Listener not registered")
+        except Exception as e:
+            raise e
+        
+        try:
+            controllerUUID = rawRequest["controllerUUID"]
+        except KeyError:
+            raise Exceptions.MismatchedPOSTParametersError("Cannot register listener without a valid controllerUUID parameter.  Listener not registered")
+        except Exception as e:
+            raise e
+        
+        memeTypeCreator = rmlEngine.api.getEntityMemeType(creatorUUID)
+        memeTypeController = rmlEngine.api.getEntityMemeType(controllerUUID)
+        
+        if memeTypeCreator != "Agent.Creator":
+            raise Exceptions.InvalidControllerError("creatorUUID %s refers to entity of meme type %.  creatorUUID should be a valid Agent.Creator")
+        if memeTypeController != "Agent.Controller":
+            raise Exceptions.InvalidControllerError("controllerUUID %s refers to entity of meme type %.  controllerUUID should be a valid Agent.Controller")
+        
+        response.body = json.dumps({"status": "ok"})
+        response.status = 200
+        return response
+    except Exception as unusedE: 
+        fullerror = sys.exc_info()
+        errorID = str(fullerror[0])
+        errorMsg = str(fullerror[1])
+        returnStr = "Failed to register listener.  %s, %s" %(errorID, errorMsg)
+        response.body = json.dumps({"status": returnStr})
+        response.status = 500
+        return response
+    
+    
+    
+@route('/engine/log', method='POST')
+def log():
+    global rmlEngine
+    
+    try:
+        
+        rawRequest = request.POST.dict
+        for rawKey in rawRequest.keys():
+            keyVal = rawKey
+        jsonPayload = json.loads(keyVal)
+        
+        try:
+            origin = jsonPayload["origin"]
+        except KeyError:
+            origin = "anonomyous"
+            
+        originURI = request.remote_addr
+            
+        llevel = 3   
+        try:
+            llevelString = jsonPayload["logLevel"].upper()
+            if llevelString == "ERROR": llevel = 0
+            elif llevelString == "WARNING": llevel = 1
+            elif llevelString == "ADMIN": llevel = 2
+            elif llevelString == "INFO": llevel = 3
+            elif llevelString == "DEBUG": llevel = 4
+        except KeyError:
+            origin = request.remote_addr
+            
+        lType = 1   
+        try:
+            lType = int(jsonPayload["logType"])
+            if lType > 1 or lType < 0:
+                lType = 1
+        except KeyError:
+            pass
+         
+        try:
+            message = jsonPayload["message"]
+        except KeyError as e:
+            raise e   
+        
+        rmlEngine.log(originURI, origin, message, llevel, lType)    
+        response.body = json.dumps({"status": "Message posted to queue"})                
+        response.status = 200
+        return response        
+    except Exception as unusedE:
+        fullerror = sys.exc_info()
+        errorID = str(fullerror[0])
+        errorMsg = str(fullerror[1])
+        returnStr = "Error while logging.  %s, %s" %(errorID, errorMsg)
+        response.status = 500
+        response.body = json.dumps({"status": returnStr})
+        return response
 
 
 ###############################
@@ -811,7 +1012,7 @@ def forceStopServer():
 @route('/postaction', method='POST')
 def postAction():
     """  A generic action invocation """
-    
+    global rmlEngine
     try:
         
         rawRequest = request.POST.dict
@@ -867,92 +1068,252 @@ def postAction():
             rtparams = {}        
         
         actionInvocation = Engine.ActionRequest(actionID, insertionMode, rtparams, subjectID, objectID, ownerID)
-        Engine.aQ.put(actionInvocation)
+        rmlEngine.aQ.put(actionInvocation)
         
-        returnStr = "Action posted"
+        response.body = json.dumps({"status": "Action Posted"})
         response.status = 200
-        return returnStr
+        return response
     except Exceptions.InvalidControllerError:
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        returnStr = "Failed to post action.  %s, %s" %(errorID, errorMsg)
+        response.body = "Failed to post action.  %s, %s" %(errorID, errorMsg)
         response.status = 400
-        return returnStr  
+        return response  
     except Exceptions.MissingActionError:
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        returnStr = "Failed to post action.  %s, %s" %(errorID, errorMsg)
+        response.body = "Failed to post action.  %s, %s" %(errorID, errorMsg)
         response.status = 400
-        return returnStr       
+        return response       
     except Exception as unusedE: 
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        returnStr = "Failed to post action %s.  %s, %s" %(errorID, errorMsg)
+        response.body = "Failed to post action %s.  %s, %s" %(errorID, errorMsg)
         response.status = 500
-        return returnStr
+        return response
 
+
+
+@route('/poststimulus', method='POST')
+def postStimulus():
+    """  A generic stimulus invocation """
+    global rmlEngine
+    try:
+        
+        rawRequest = request.POST.dict
+        for rawKey in rawRequest.keys():
+            keyVal = rawKey
+        jsonPayload = json.loads(keyVal)
+        
+        try:
+            actionID = jsonPayload["actionID"]
+        except KeyError:
+            errorMsg = "Missing required JSON parameter 'actionID'"
+            raise Exceptions.MissingActionError(errorMsg)
+
+        try:
+            ownerID = jsonPayload["ownerID"]
+        except KeyError:
+            errorMsg = "Missing required JSON parameter 'ownerID'"
+            raise Exceptions.InvalidControllerError()
+        
+        try:
+            subjectID = jsonPayload["subjectID"]
+        except KeyError:
+            subjectID = ownerID
+            
+        try:
+            objectID = jsonPayload["objectID"]
+        except KeyError:
+            objectID = ownerID
+            
+        try:
+            objectID = jsonPayload["objectID"]
+        except KeyError:
+            objectID = ownerID
+        
+        try:
+            
+            insertionModeText = jsonPayload["insertionMode"]
+            if insertionModeText == 'head_clear':
+                insertionMode = ationInsertionTypes.HEAD_CLEAR
+            elif insertionModeText == 'head':
+                insertionMode = ationInsertionTypes.HEAD
+            elif insertionModeText == 'append':
+                insertionMode = ationInsertionTypes.APPEND
+            else:
+                errorMsg = "Invalid insertionMode parameter.  Valid values are 'head', 'head_clear' and 'append'" %insertionModeText
+                raise Exceptions.InsertionModeError()
+        except KeyError:
+            insertionMode = ationInsertionTypes.HEAD_CLEAR
+
+        try:
+            rtparams = jsonPayload["actionParams"]
+        except KeyError:
+            rtparams = {}        
+        
+        actionInvocation = Engine.ActionRequest(actionID, insertionMode, rtparams, subjectID, objectID, ownerID)
+        rmlEngine.aQ.put(actionInvocation)
+        
+        response.body = json.dumps({"status": "Stimulus Posted"})
+        response.status = 200
+        return response
+    except Exceptions.InvalidControllerError:
+        fullerror = sys.exc_info()
+        errorID = str(fullerror[0])
+        errorMsg = str(fullerror[1])
+        response.body = "Failed to post action.  %s, %s" %(errorID, errorMsg)
+        response.status = 400
+        return response  
+    except Exceptions.MissingActionError:
+        fullerror = sys.exc_info()
+        errorID = str(fullerror[0])
+        errorMsg = str(fullerror[1])
+        response.body = "Failed to post action.  %s, %s" %(errorID, errorMsg)
+        response.status = 400
+        return response       
+    except Exception as unusedE: 
+        fullerror = sys.exc_info()
+        errorID = str(fullerror[0])
+        errorMsg = str(fullerror[1])
+        response.body = "Failed to post action %s.  %s, %s" %(errorID, errorMsg)
+        response.status = 500
+        return response
+    
+    
+@route('/collectmessages', method='POST')
+def collectMessages():
+    """  A generic stimulus invocation """
+    global rmlEngine
+    try:
+        stimuli = []
+        
+        rawRequest = request.POST.dict
+        for rawKey in rawRequest.keys():
+            keyVal = rawKey
+        jsonPayload = json.loads(keyVal)
+        try:
+            actionID = jsonPayload["actionID"]
+        except KeyError:
+            errorMsg = "Missing required JSON parameter 'actionID'"
+            raise Exceptions.MissingActionError(errorMsg)
+
+        try:
+            ownerID = jsonPayload["ownerID"]
+        except KeyError:
+            errorMsg = "Missing required JSON parameter 'ownerID'"
+            raise Exceptions.InvalidControllerError()
+        
+        try:
+            subjectID = jsonPayload["subjectID"]
+        except KeyError:
+            subjectID = ownerID
+            
+        try:
+            objectID = jsonPayload["objectID"]
+        except KeyError:
+            objectID = ownerID
+            
+        try:
+            objectID = jsonPayload["objectID"]
+        except KeyError:
+            objectID = ownerID
+        
+        try:
+            
+            insertionModeText = jsonPayload["insertionMode"]
+            if insertionModeText == 'head_clear':
+                insertionMode = ationInsertionTypes.HEAD_CLEAR
+            elif insertionModeText == 'head':
+                insertionMode = ationInsertionTypes.HEAD
+            elif insertionModeText == 'append':
+                insertionMode = ationInsertionTypes.APPEND
+            else:
+                errorMsg = "Invalid insertionMode parameter.  Valid values are 'head', 'head_clear' and 'append'" %insertionModeText
+                raise Exceptions.InsertionModeError()
+        except KeyError:
+            insertionMode = ationInsertionTypes.HEAD_CLEAR
+
+        try:
+            rtparams = jsonPayload["actionParams"]
+        except KeyError:
+            rtparams = {}        
+        
+        actionInvocation = Engine.ActionRequest(actionID, insertionMode, rtparams, subjectID, objectID, ownerID)
+        rmlEngine.aQ.put(actionInvocation)
+        
+        response.body = json.dumps({"status": stimuli})
+        response.status = 200
+        return response
+    except Exceptions.InvalidControllerError:
+        fullerror = sys.exc_info()
+        errorID = str(fullerror[0])
+        errorMsg = str(fullerror[1])
+        response.body = "Failed to post action.  %s, %s" %(errorID, errorMsg)
+        response.status = 400
+        return response  
+    except Exceptions.MissingActionError:
+        fullerror = sys.exc_info()
+        errorID = str(fullerror[0])
+        errorMsg = str(fullerror[1])
+        response.body = "Failed to post action.  %s, %s" %(errorID, errorMsg)
+        response.status = 400
+        return response       
+    except Exception as unusedE: 
+        fullerror = sys.exc_info()
+        errorID = str(fullerror[0])
+        errorMsg = str(fullerror[1])
+        response.body = "Failed to post action %s.  %s, %s" %(errorID, errorMsg)
+        response.status = 500
+        return response
+    
 
 ##########################
 ##  Modeling (Generic)
 ##########################
-    
-@route('/modeling/addEntityLink/<sourceEntityID>/<targetEntityID>', method='GET')
-def addEntityLink(sourceEntityID, targetEntityID):
-    
-    try:
-        returnResults = Engine.Graph.api.addEntityLink(sourceEntityID, targetEntityID)
-        returnResultsJson = json.dumps(returnResults)
-        
-        returnStr = "%s" %(returnResultsJson)
-        response.status = 200
-        return returnStr
-    except Exception as unusedE: 
-        fullerror = sys.exc_info()
-        errorID = str(fullerror[0])
-        errorMsg = str(fullerror[1])
-        returnStr = "Failed to link Entity %s to %s, % %s" %(sourceEntityID, targetEntityID, errorID, errorMsg)
-        response.status = 500
-        return returnStr
     
 #Graph Methods - These handlers expose the Graphyene API via REST
 @route('/modeling/createEntityFromMeme/<memePath>', method='GET')
 def createEntityFromMeme(memePath):
     
     try:
-        newUUID = Engine.Graph.api.createEntityFromMeme(memePath)
+        newUUID = rmlEngine.api.createEntityFromMeme(memePath)
+        uuidAsStr = "%s" %(newUUID)
         
-        returnStr = "%s" %(newUUID)
         response.status = 200
-        return returnStr
+        response.body = json.dumps({"entityUUID": uuidAsStr})
+        return response
     except Exception as unusedE: 
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        returnStr = "Failed to create new %s Entity %s.  %s, %s" %(memePath, newUUID, errorID, errorMsg)
+        response.body = "Failed to create new %s Entity.  %s, %s" %(memePath, errorID, errorMsg)
         response.status = 500
-        return returnStr
+        return response
     
-        
     
-@route('/modeling/getClusterJSON/<entityUUID>', method='GET')
-def getClusterJSON(entityUUID):
+#Graph Methods - These handlers expose the Graphyene API via REST
+@route('/modeling/createEntity', method='GET')
+def createEntity():
     
     try:
-        newUUID = Engine.Graph.api.getClusterJSON(entityUUID)
+        newUUID = rmlEngine.api.createEntity()
+        uuidAsStr = "%s" %(newUUID)
         
-        returnStr = "%s" %(newUUID)
         response.status = 200
-        return returnStr
+        response.body = json.dumps({"entityUUID": uuidAsStr})
+        return response
     except Exception as unusedE: 
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        returnStr = "Failed to get cluster of Entity %s.  %s, %s" %(entityUUID, errorID, errorMsg)
+        response.body = "Failed to create new generic Entity %s.  %s, %s" %(newUUID, errorID, errorMsg)
         response.status = 500
-        return returnStr
+        return response
+    
 
 
 
@@ -960,19 +1321,138 @@ def getClusterJSON(entityUUID):
 def getEntityMemeType(entityUUID):
     
     try:
-        newUUID = Engine.Graph.api.getEntityMemeType(entityUUID)
+        memeType = rmlEngine.api.getEntityMemeType(uuid.UUID(entityUUID))
         
-        returnStr = "%s" %(newUUID)
+        response.body = json.dumps({"entityUUID": entityUUID, "memeType": memeType})
         response.status = 200
-        return returnStr
+        return response
     except Exception as unusedE: 
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        returnStr = "Failed to get meme type of Entity %s.  %s, %s" %(entityUUID, errorID, errorMsg)
+        response.body = "Failed to get meme type of Entity %s.  %s, %s" %(entityUUID, errorID, errorMsg)
         response.status = 500
-        return returnStr
+        return response
     
+    
+    
+@route('/modeling/getEntityMetaMemeType/<entityUUID>', method='GET')
+def getEntityMetaMemeType(entityUUID):
+    
+    try:
+        metaMemeType = rmlEngine.api.getEntityMetaMemeType(uuid.UUID(entityUUID))
+        
+        response.body = json.dumps({"entityUUID": entityUUID, "mmetaMmeType": metaMemeType})
+        response.status = 200
+        return response
+    except Exception as unusedE: 
+        fullerror = sys.exc_info()
+        errorID = str(fullerror[0])
+        errorMsg = str(fullerror[1])
+        response.body = "Failed to get meme type of Entity %s.  %s, %s" %(entityUUID, errorID, errorMsg)
+        response.status = 500
+        return response
+    
+    
+@route('/modeling/getEntitiesByMemeType/<memePath>', method='GET')
+def getEntitiesByMemeType(memePath):
+    
+    try:
+        entityUUIDList = rmlEngine.api.getEntitiesByMemeType(memePath)
+        
+        entityList = []
+        for entityUUID in entityUUIDList:
+            entityID = str(entityUUID)
+            entityList.append(entityID)
+        
+        response.body = json.dumps({"memeType": memePath, "entityIDList": entityList})
+        response.status = 200
+        return response
+    except Exception as unusedE: 
+        fullerror = sys.exc_info()
+        errorID = str(fullerror[0])
+        errorMsg = str(fullerror[1])
+        response.body = "Failed to find entitities of type %s.  %s, %s" %(memePath, errorID, errorMsg)
+        response.status = 500
+        return response
+    
+    
+@route('/modeling/getEntitiesByMetaMemeType/<metaMemePath>', method='GET')
+def getEntitiesByMetaMemeType(metaMemePath):
+    
+    try:
+        entityUUIDList = rmlEngine.api.getEntitiesByMetaMemeType(metaMemePath)
+        
+        entityList = []
+        for entityUUID in entityUUIDList:
+            entityID = str(entityUUID)
+            entityList.append(entityID)
+        
+        response.body = json.dumps({"metaMemeType": metaMemePath, "entityIDList": entityList})
+        response.status = 200
+        return response
+    except Exception as unusedE: 
+        fullerror = sys.exc_info()
+        errorID = str(fullerror[0])
+        errorMsg = str(fullerror[1])
+        response.body = "Failed to find entitities of metameme type %s.  %s, %s" %(metaMemePath, errorID, errorMsg)
+        response.status = 500
+        return response
+
+
+
+@route('/modeling/addEntityLink', method='POST')
+def addEntityLink():
+    
+    try:
+        global rmlEngine
+        
+        rawRequest = request.POST.dict
+        for rawKey in rawRequest.keys():
+            keyVal = rawKey
+        jsonPayload = json.loads(keyVal)
+        
+        try:
+            sourceEntityID = jsonPayload["sourceEntityID"]
+            sourceEntityUUID = uuid.UUID(sourceEntityID)
+        except KeyError:
+            errorMsg = "Missing required JSON parameter 'sourceEntityID'"
+            raise Exceptions.MissingActionError(errorMsg)
+        
+        try:
+            targetEntityID = jsonPayload["targetEntityID"]
+            targetEntityUUID = uuid.UUID(targetEntityID)
+        except KeyError:
+            errorMsg = "Missing required JSON parameter 'targetEntityID'"
+            raise Exceptions.MissingActionError(errorMsg)
+        
+        linkAttributes = {}
+        try:
+            linkAttributes = jsonPayload["linkAttributes"]
+        except KeyError:
+            #This parameter is optional
+            pass 
+        
+        linkType = 0
+        try:
+            linkType = int(jsonPayload["linkType"])
+        except KeyError:
+            #This parameter is optional
+            pass 
+    
+        returnResults = rmlEngine.api.addEntityLink(sourceEntityUUID, targetEntityUUID, linkAttributes, linkType)
+        response.body = json.dumps({"sourceEntityUUID": sourceEntityID, "targetEntityID": targetEntityID, "status": "sucsess"})
+        response.status = 200
+        return response
+    except Exception as unusedE: 
+        fullerror = sys.exc_info()
+        errorID = str(fullerror[0])
+        errorMsg = str(fullerror[1])
+        returnStr = "Failed to link Entity %s to %s, % %s" %(sourceEntityID, targetEntityID, errorID, errorMsg)
+        response.body = json.dumps({"sourceEntityUUID": sourceEntityID, "targetEntityID": targetEntityID, "linkAttributes" : linkAttributes, "linkType" : linkType, "status": "failure", "message" : returnStr})
+        response.status = 500
+        return response
+        
     
         
     
@@ -980,12 +1460,33 @@ def getEntityMemeType(entityUUID):
 def removeEntityLink(sourceEntityID, targetEntityID):
     
     try:
-        returnResults = Engine.Graph.api.removeEntityLink(sourceEntityID, targetEntityID)
-        returnResultsJson = json.dumps(returnResults)
-        
-        returnStr = "%s" %(returnResultsJson)
+        sourceEntityUUID = uuid.UUID(sourceEntityID)
+        targetEntityUUID = uuid.UUID(targetEntityID)
+        returnResults = rmlEngine.api.removeEntityLink(sourceEntityUUID, targetEntityUUID)
+        response.body = json.dumps({"sourceEntityUUID": sourceEntityID, "targetEntityID": targetEntityID, "status": "sucsess"})
         response.status = 200
+        return response
+    except Exception as unusedE: 
+        fullerror = sys.exc_info()
+        errorID = str(fullerror[0])
+        errorMsg = str(fullerror[1])
+        returnStr = "Failed to remove link from Entity %s to %s, % %s" %(sourceEntityID, targetEntityID, errorID, errorMsg)
+        response.status = 500
         return returnStr
+
+
+
+@route('/modeling/getAreEntitiesLinked/<sourceEntityID>/<targetEntityID>', method='GET')
+def getAreEntitiesLinked(sourceEntityID, targetEntityID):
+    
+    try:
+        sourceEntityUUID = uuid.UUID(sourceEntityID)
+        targetEntityUUID = uuid.UUID(targetEntityID)
+        areLinked = rmlEngine.api.getAreEntitiesLinked(sourceEntityUUID, targetEntityUUID)
+        areLinkedS = str(areLinked)
+        response.body = json.dumps({"sourceEntityUUID": sourceEntityID, "targetEntityID": targetEntityID, "linkExists": areLinkedS})
+        response.status = 200
+        return response
     except Exception as unusedE: 
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
@@ -995,17 +1496,86 @@ def removeEntityLink(sourceEntityID, targetEntityID):
         return returnStr
     
     
-    
-@route('/modeling/setEntityPropertyValue/<entityID>/<propName>/<propValue>', method='GET')
-def setEntityPropertyValue(entityID, propName, propValue):
+
+
+@route('/modeling/getEntityHasProperty/<entityID>/<propName>', method='GET')
+def getEntityHasProperty(entityID, propName):
     
     try:
-        returnResults = Engine.Graph.api.setEntityPropertyValue(entityID, propName, propValue)
-        returnResultsJson = json.dumps(returnResults)
-        
-        returnStr = "%s" %(returnResultsJson)
+        global rmlEngine
+        entityUUID = uuid.UUID(entityID)
+        propValue = rmlEngine.api.getEntityHasProperty(entityUUID, propName)
+        propValueS = str(propValue)
+        response.body = json.dumps({"entityID": entityID, "propertyName": propName, "present" : propValueS})
         response.status = 200
+        return response
+    except Exception as unusedE: 
+        fullerror = sys.exc_info()
+        errorID = str(fullerror[0])
+        errorMsg = str(fullerror[1])
+        returnStr = "Failed to set property %s to %s on Entity %s, % %s" %(propName, propValue, entityID, errorID, errorMsg)
+        response.status = 500
         return returnStr
+    
+        
+
+@route('/modeling/getEntityPropertyValue/<entityID>/<propName>', method='GET')
+def getEntityPropertyValue(entityID, propName):
+    
+    try:
+        global rmlEngine
+        entityUUID = uuid.UUID(entityID)
+        propValue = rmlEngine.api.getEntityPropertyValue(entityUUID, propName)
+        response.body = json.dumps({"entityID": entityID, "propertyName": propName, "propertyValue" : propValue})
+        response.status = 200
+        return response
+    except Exception as unusedE: 
+        fullerror = sys.exc_info()
+        errorID = str(fullerror[0])
+        errorMsg = str(fullerror[1])
+        returnStr = "Failed to set property %s to %s on Entity %s, % %s" %(propName, propValue, entityID, errorID, errorMsg)
+        response.status = 500
+        return returnStr
+
+    
+    
+@route('/modeling/setEntityPropertyValue', method='POST')
+def setEntityPropertyValue():
+    
+    try:
+        global rmlEngine
+        
+        rawRequest = request.POST.dict
+        for rawKey in rawRequest.keys():
+            keyVal = rawKey
+        jsonPayload = json.loads(keyVal)
+        
+        try:
+            entityID = jsonPayload["entityID"]
+            try:
+                entityUUID = uuid.UUID(entityID)
+            except ValueError as e:
+                catchme = ""
+        except KeyError:
+            errorMsg = "Missing required JSON parameter 'entityID'"
+            raise Exceptions.MissingActionError(errorMsg)
+        
+        try:
+            propName = jsonPayload["propName"]
+        except KeyError:
+            errorMsg = "Missing required JSON parameter 'propName'"
+            raise Exceptions.MissingActionError(errorMsg)
+        
+        try:
+            propValue = jsonPayload["propValue"]
+        except KeyError:
+            errorMsg = "Missing required JSON parameter 'propValue'"
+            raise Exceptions.MissingActionError(errorMsg)
+    
+        returnResults = rmlEngine.api.setEntityPropertyValue(entityUUID, propName, propValue)
+        response.body = json.dumps({"entityID": entityID, "propertyName": propName, "propertyValue": propValue})
+        response.status = 200
+        return response
     except Exception as unusedE: 
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
@@ -1014,6 +1584,246 @@ def setEntityPropertyValue(entityID, propName, propValue):
         response.status = 500
         return returnStr
         
+        
+@route('/modeling/query', method='POST')
+def getLinkCounterpartsByType():
+    #entityUUID, memePath, linkType = None, isMeme = True, fastSearch = False
+    try:
+        global rmlEngine
+        
+        rawRequest = request.POST.dict
+        for rawKey in rawRequest.keys():
+            keyVal = rawKey
+        jsonPayload = json.loads(keyVal)
+        
+        try:
+            entityID = jsonPayload["originEntityID"]
+            try:
+                entityUUID = uuid.UUID(entityID)
+            except ValueError as e:
+                catchme = ""
+        except KeyError:
+            errorMsg = "Missing required JSON parameter 'originEntityID'"
+            raise Exceptions.MissingActionError(errorMsg)
+        
+        try:
+            memePath = jsonPayload["query"]
+        except KeyError:
+            errorMsg = "Missing required JSON parameter 'query'"
+            raise Exceptions.MissingActionError(errorMsg)
+        
+        linkType = None
+        try:
+            linkType = jsonPayload["linkType"]
+            if int(linkType) not in [0, 1]:
+                errorMessage = "Optional JSON parameter 'linkType' of invalid value.  Only 0 and 1 are valid.  Recieved %s" %(linkType)
+                raise ValueError(errorMessage)
+        except KeyError as e:
+            #Optional
+            pass
+        except ValueError as e:
+            raise e
+        except Exception as e:
+            raise e
+        
+        fastSearch = False
+        '''
+        try:
+            fastSearch = jsonPayload["fastSearch"]
+            if int(linkType) not in [0, 1]:
+                errorMessage = "Optional JSON parameter 'fastSearch' of invalid value.  Only True and False are valid.  Recieved %s" %(fastSearch)
+                raise ValueError(errorMessage)
+        except ValueError as e:
+            raise e
+        except Exception as e:
+            #Optional
+            pass
+        '''
+    
+        entityUUIDList = rmlEngine.api.getLinkCounterpartsByType(entityUUID, memePath, linkType, fastSearch)
+        entityList = []
+        for selectionUUID in entityUUIDList:
+            selectionID = str(selectionUUID)
+            entityList.append(selectionID)
+        response.body = json.dumps({"entityIDList": entityList})
+        response.status = 200
+        return response
+    except Exception as unusedE: 
+        fullerror = sys.exc_info()
+        errorID = str(fullerror[0])
+        errorMsg = str(fullerror[1])
+        response.body = "Graph traverse query %s from entity %s failed.  %s, %s %s" %(memePath, entityUUID, entityID, errorID, errorMsg)
+        response.status = 500
+        return response
+
+
+
+
+@route('/modeling/querym', method='POST')
+def getLinkCounterpartsByMetaMemeType():
+    #entityUUID, memePath, linkType = None, isMeme = True, fastSearch = False
+    try:
+        global rmlEngine
+        
+        rawRequest = request.POST.dict
+        for rawKey in rawRequest.keys():
+            keyVal = rawKey
+        jsonPayload = json.loads(keyVal)
+        
+        try:
+            entityID = jsonPayload["originEntityID"]
+            try:
+                entityUUID = uuid.UUID(entityID)
+            except ValueError as e:
+                catchme = ""
+        except KeyError:
+            errorMsg = "Missing required JSON parameter 'originEntityID'"
+            raise Exceptions.MissingActionError(errorMsg)
+        
+        try:
+            memePath = jsonPayload["query"]
+        except KeyError:
+            errorMsg = "Missing required JSON parameter 'query'"
+            raise Exceptions.MissingActionError(errorMsg)
+        
+        linkType = None
+        try:
+            linkType = jsonPayload["linkType"]
+            if int(linkType) not in [0, 1]:
+                errorMessage = "Optional JSON parameter 'linkType' of invalid value.  Only 0 and 1 are valid.  Recieved %s" %(linkType)
+                raise ValueError(errorMessage)
+        except ValueError as e:
+            raise e
+        except Exception as e:
+            #Optional
+            pass
+    
+        entityUUIDList = rmlEngine.api.getLinkCounterpartsByMetaMemeType(entityUUID, memePath, linkType, False)
+        entityList = []
+        for selectionUUID in entityUUIDList:
+            selectionID = str(selectionUUID)
+            entityList.append(selectionID)
+        response.body = json.dumps({"entityIDList": entityList})
+        response.status = 200
+        return response
+    except Exception as unusedE: 
+        fullerror = sys.exc_info()
+        errorID = str(fullerror[0])
+        errorMsg = str(fullerror[1])
+        returnStr = "Graph traverse query %s from entity %s failed.  %s, %s %s" %(memePath, entityUUID, entityID, errorID, errorMsg)
+        response.status = 500
+        return returnStr        
+    
+    
+    
+@route('/modeling/getTraverseReport', method='POST')
+def getTraverseReport():
+    #entityUUID, memePath, linkType = None, isMeme = True, fastSearch = False
+    try:
+        global rmlEngine
+        
+        rawRequest = request.POST.dict
+        for rawKey in rawRequest.keys():
+            keyVal = rawKey
+        jsonPayload = json.loads(keyVal)
+        
+        try:
+            entityID = jsonPayload["originEntityID"]
+            try:
+                entityUUID = uuid.UUID(entityID)
+            except ValueError as e:
+                catchme = ""
+        except KeyError:
+            errorMsg = "Missing required JSON parameter 'originEntityID'"
+            raise Exceptions.MissingActionError(errorMsg)
+        
+        try:
+            memePath = jsonPayload["query"]
+        except KeyError:
+            errorMsg = "Missing required JSON parameter 'query'"
+            raise Exceptions.MissingActionError(errorMsg)
+        
+        linkType = 0
+        try:
+            linkType = jsonPayload["linkType"]
+            if int(linkType) not in [0, 1, 2]:
+                errorMessage = "Optional JSON parameter 'linkType' of invalid value.  Only 0 and 1 are valid.  Recieved %s" %(linkType)
+                raise ValueError(errorMessage)
+            if linkType == 2: linkType = None
+        except ValueError as e:
+            raise e
+        except Exception as e:
+            #Optional
+            pass
+
+    
+        #traverseReport = rmlEngine.api.getTraverseReportJSON(entityUUID, memePath, True, linkType)
+        traverseReport = rmlEngine.api.getTraverseReport(entityUUID, memePath, True, linkType)
+        response.body = json.dumps(traverseReport)
+        response.status = 200
+        return response
+    except Exception as unusedE: 
+        fullerror = sys.exc_info()
+        errorID = str(fullerror[0])
+        errorMsg = str(fullerror[1])
+        returnStr = "Graph traverse query %s from entity %s failed.  %s, %s %s" %(memePath, entityUUID, entityID, errorID, errorMsg)
+        response.status = 500
+        return returnStr  
+    
+    
+    
+@route('/modeling/getTraverseReportByMetaMemes', method='POST')
+def getTraverseReportByMetaMemes():
+    #entityUUID, memePath, linkType = None, isMeme = True, fastSearch = False
+    try:
+        global rmlEngine
+        
+        rawRequest = request.POST.dict
+        for rawKey in rawRequest.keys():
+            keyVal = rawKey
+        jsonPayload = json.loads(keyVal)
+        
+        try:
+            entityID = jsonPayload["originEntityID"]
+            try:
+                entityUUID = uuid.UUID(entityID)
+            except ValueError as e:
+                catchme = ""
+        except KeyError:
+            errorMsg = "Missing required JSON parameter 'originEntityID'"
+            raise Exceptions.MissingActionError(errorMsg)
+        
+        try:
+            memePath = jsonPayload["query"]
+        except KeyError:
+            errorMsg = "Missing required JSON parameter 'query'"
+            raise Exceptions.MissingActionError(errorMsg)
+        
+        linkType = None
+        try:
+            linkType = jsonPayload["linkType"]
+            if int(linkType) not in [0, 1]:
+                errorMessage = "Optional JSON parameter 'linkType' of invalid value.  Only 0 and 1 are valid.  Recieved %s" %(linkType)
+                raise ValueError(errorMessage)
+        except ValueError as e:
+            raise e
+        except Exception as e:
+            #Optional
+            pass
+
+    
+        traverseReport = rmlEngine.api.getTraverseReportJSON(entityUUID, memePath, False, linkType)
+        response.body = json.dumps(traverseReport)
+        response.status = 200
+        return response
+    except Exception as unusedE: 
+        fullerror = sys.exc_info()
+        errorID = str(fullerror[0])
+        errorMsg = str(fullerror[1])
+        returnStr = "Graph traverse query %s from entity %s failed.  %s, %s %s" %(memePath, entityUUID, entityID, errorID, errorMsg)
+        response.status = 500
+        return returnStr       
+
 
 
 
@@ -1023,52 +1833,17 @@ def setEntityPropertyValue(entityID, propName, propValue):
 
 
 #Graph Methods - These handlers expose the Graphyene API via REST
-@route('/modeling/addCreator', method='POST')
+@route('/modeling/addCreator', method='GET')
 def addCreator():
     
     try:
+        global rmlEngine
+        newUUID = rmlEngine.api.createEntityFromMeme("Agent.Creator")
+        uuidAsStr = "%s" %(newUUID)
         
-        rawRequest = request.POST.dict 
-        
-        try:
-            dataCCallbackURL = rawRequest["dataCallbackURL"]
-        except KeyError:
-            raise Exceptions.MismatchedPOSTParametersError("Creator entity has no data callback url (dataCallbackURL) POST request parameter.  Entity not created")
-        except Exception as e:
-            raise e
-        
-        try:
-            stimulusCCallbackURL = rawRequest["stimulusCallbackURL"]
-        except KeyError:
-            raise Exceptions.MismatchedPOSTParametersError("Creator entity has no data callback url (stimulusCallbackURL) POST request parameter.  Entity not created")
-        except Exception as e:
-            raise e
-        
-        newUUID = Engine.Graph.api.createEntityFromMeme("Agent.Creator")
-        
-        returnStr = "%s" %(newUUID)
         response.status = 200
-        return returnStr
-    except Exception as unusedE: 
-        fullerror = sys.exc_info()
-        errorID = str(fullerror[0])
-        errorMsg = str(fullerror[1])
-        returnStr = "Failed to create new Agent.Creator Entity.  %s, %s" %(errorID, errorMsg)
-        response.status = 500
-        return returnStr
-    
-
-
-#Graph Methods - These handlers expose the Graphyene API via REST
-@route('/modeling/addOwner', method='GET')
-def addOwner():
-    
-    try:
-        newUUID = Engine.Graph.api.createEntityFromMeme("Agent.Owner")
-        
-        returnStr = "%s" %(newUUID)
-        response.status = 200
-        return returnStr
+        response.body = json.dumps({"entityUUID": uuidAsStr})
+        return response
     except Exception as unusedE: 
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
@@ -1077,6 +1852,193 @@ def addOwner():
         response.status = 500
         return returnStr
     
+    
+@route('/modeling/registerCreatorDataCallbackURL', method='POST')
+def registerCreatorDataCallbackURL():
+    
+    try:
+        global rmlEngine
+        rawRequest = request.POST.dict
+        for rawKey in rawRequest.keys():
+            keyVal = rawKey
+        jsonPayload = json.loads(keyVal)
+        
+        #ownerID
+        try:
+            creatorID = jsonPayload["creatorID"]
+            creatorUUID = uuid.UUID(creatorID)
+        except KeyError:
+            raise Exceptions.MissingPOSTArgumentError("creatorID parameter missing from POST request.")
+        except Exception as e:
+            raise e
+        
+        try:
+            ownerEntityType = rmlEngine.api.getEntityMemeType(creatorUUID)
+        except Exception as e:
+            raise Exceptions.NoSuchEntityError("creatorID parameter value %s does not exist." %creatorID)
+        
+        if ownerEntityType != "Agent.Creator":
+            raise Exceptions.TemplatePathError("creatorID parameter value %s does not refer to a valid data creator" %creatorID)
+
+        #stimulusCallbackURL
+        try:
+            dataCallbackURL = jsonPayload["dataCallbackURL"]
+        except KeyError:
+            raise Exceptions.MissingPOSTArgumentError("dataCallbackURL parameter missing from POST request.")
+        except Exception as e:
+            raise e
+        
+        try:
+            rmlEngine.api.setEntityPropertyValue(creatorUUID, "dataCallbackURL", dataCallbackURL)
+        except Exception as e:
+            raise Exceptions.MismatchedPOSTParametersError("Error while assigning stimulusCallbackURL value %s to entity %s " %(dataCallbackURL, creatorID))
+
+        
+        returnStr = "Assigned dataCallbackURL %s to owner %s " %(dataCallbackURL, creatorID)
+        response.status = 200
+        return returnStr
+    except Exception as unusedE: 
+        fullerror = sys.exc_info()
+        errorID = str(fullerror[0])
+        errorMsg = str(fullerror[1])
+        returnStr = "Failed to assign dataCallbackURL to  new Agent.Creator Entity.  %s, %s" %(errorID, errorMsg)
+        response.status = 500
+        return returnStr
+    
+    
+    
+@route('/modeling/registerCreatorStimulusCallbackURL', method='POST')
+def registerCreatorStimulusCallbackURL():
+    
+    try:
+        global rmlEngine
+        rawRequest = request.POST.dict
+        for rawKey in rawRequest.keys():
+            keyVal = rawKey
+        jsonPayload = json.loads(keyVal)
+        
+        #ownerID
+        try:
+            creatorID = jsonPayload["creatorID"]
+            creatorUUID = uuid.UUID(creatorID)
+        except KeyError:
+            raise Exceptions.MissingPOSTArgumentError("creatorID parameter missing from POST request.")
+        except Exception as e:
+            raise e
+        
+        try:
+            ownerEntityType = rmlEngine.api.getEntityMemeType(creatorUUID)
+        except Exception as e:
+            raise Exceptions.NoSuchEntityError("creatorID parameter value %s does not exist." %creatorID)
+        
+        if ownerEntityType != "Agent.Creator":
+            raise Exceptions.TemplatePathError("creatorID parameter value %s does not refer to a valid data creator" %creatorID)
+                
+        
+        #stimulusCallbackURL
+        try:
+            stimulusCallbackURL = jsonPayload["stimulusCallbackURL"]
+        except KeyError:
+            raise Exceptions.MissingPOSTArgumentError("stimulusCallbackURL parameter missing from POST request.")
+        except Exception as e:
+            raise e
+        
+        try:
+            rmlEngine.api.setEntityPropertyValue(creatorUUID, "stimulusCallbackURL", stimulusCallbackURL)
+        except Exception as e:
+            raise Exceptions.MismatchedPOSTParametersError("Error while assigning stimulusCallbackURL value %s to entity %s " %(stimulusCallbackURL, creatorID))
+
+        returnStr = "Assigned stimulusCallbackURL %s to owner %s " %(stimulusCallbackURL, creatorID)
+        response.body = json.dumps({"status": returnStr})
+        response.status = 200
+        return response
+    except Exception as unusedE: 
+        fullerror = sys.exc_info()
+        errorID = str(fullerror[0])
+        errorMsg = str(fullerror[1])
+        returnStr = "Failed to assign dataCallbackURL to  new Agent.Creator Entity.  %s, %s" %(errorID, errorMsg)
+        response.status = 500
+        return returnStr
+    
+        
+
+
+#Graph Methods - These handlers expose the Graphyene API via REST
+@route('/modeling/addOwner', method='GET')
+def addOwner():
+    
+    try:
+        global rmlEngine
+        newUUID = rmlEngine.api.createEntityFromMeme("Agent.Owner")
+        uuidAsStr = "%s" %(newUUID)
+        
+        response.status = 200
+        response.body = json.dumps({"entityUUID": uuidAsStr})
+        return response
+    except Exception as unusedE: 
+        fullerror = sys.exc_info()
+        errorID = str(fullerror[0])
+        errorMsg = str(fullerror[1])
+        returnStr = "Failed to create new Agent.Owner Entity.  %s, %s" %(errorID, errorMsg)
+        response.status = 500
+        return returnStr
+    
+    
+    
+#Graph Methods - These handlers expose the Graphyene API via REST
+@route('/modeling/registerOwnerCallbackURL', method='POST')
+def registerOwnerCallbackURL():
+    
+    try:
+        global rmlEngine
+        rawRequest = request.POST.dict
+        for rawKey in rawRequest.keys():
+            keyVal = rawKey
+        jsonPayload = json.loads(keyVal)
+        
+        #ownerID
+        try:
+            ownerID = jsonPayload["ownerID"]
+            ownerUUID = uuid.UUID(ownerID)
+        except KeyError:
+            raise Exceptions.MissingPOSTArgumentError("ownerID parameter missing from POST request.")
+        except Exception as e:
+            raise e
+        
+        try:
+            ownerEntityType = rmlEngine.api.getEntityMemeType(ownerUUID)
+        except Exception as e:
+            raise Exceptions.NoSuchEntityError("ownerID parameter value %s does not exist." %ownerID)
+        
+        if ownerEntityType != "Agent.Owner":
+            raise Exceptions.TemplatePathError("ownerID parameter value %s does not refer to a valid data owner" %ownerID)
+        
+        
+        #stimulusCallbackURL
+        try:
+            stimulusCallbackURL = jsonPayload["stimulusCallbackURL"]
+        except KeyError:
+            raise Exceptions.MissingPOSTArgumentError("stimulusCallbackURL parameter missing from POST request.")
+        except Exception as e:
+            raise e
+        
+        try:
+            rmlEngine.api.setEntityPropertyValue(ownerUUID, "stimulusCallbackURL", stimulusCallbackURL)
+        except Exception as e:
+            raise Exceptions.MismatchedPOSTParametersError("Error while assigning stimulusCallbackURL value %s to entity %s " %(stimulusCallbackURL, ownerID))
+
+        
+        returnStr = "Assigned stimulusCallbackURL %s to owner %s " %(stimulusCallbackURL, ownerID)
+        response.body = json.dumps({"status": returnStr})
+        response.status = 200
+        return response
+    except Exception as unusedE: 
+        fullerror = sys.exc_info()
+        errorID = str(fullerror[0])
+        errorMsg = str(fullerror[1])
+        returnStr = "Failed to create new Agent.Owner Entity.  %s, %s" %(errorID, errorMsg)
+        response.status = 500
+        return returnStr
     
     
 
@@ -1096,15 +2058,16 @@ def addDataMolecule(technicalName, creatorID, ownerID):
         try:
             callbackURL = rawRequest["CallbackURL"]
         except KeyError:
-            raise Exceptions.MismatchedPOSTParametersError("Intent Modlecule has no url.  Molecule not created")
+            raise Exceptions.MismatchedPOSTParametersError("Data Modlecule has no url.  Molecule not created")
         except Exception as e:
             raise e
         
         newUUID = addMolecule("Agent.Molecule", "data", technicalName, creatorID, ownerID, rawRequest)    
-        unusedPropertySetResults = Engine.Graph.api.setEntityPropertyValue(newUUID, "CallbackURL", callbackURL)    
+        unusedPropertySetResults = rmlEngine.api.setEntityPropertyValue(newUUID, "CallbackURL", callbackURL)    
         returnStr = "%s" %newUUID
+        response.body = json.dumps({"entityUUID": newUUID})
         response.status = 200
-        return returnStr       
+        return response       
     except Exception as unusedE: 
         fullerror = sys.exc_info()
         errorMsg = str(fullerror[1])
@@ -1121,13 +2084,14 @@ def addEvent(moduleName, eventName):
     """
 
     try:
+        global rmlEngine
         rawRequest = request.POST.dict
-        eventCreationReport = Engine.Graph.api.sourceMemeCreate(eventName, moduleName, "Agent.EventMM")
-        unusedReturn = Engine.Graph.api.sourceMemeSetSingleton(eventCreationReport["memeID"], True)
+        eventCreationReport = rmlEngine.api.sourceMemeCreate(eventName, moduleName, "Agent.EventMM")
+        unusedReturn = rmlEngine.api.sourceMemeSetSingleton(eventCreationReport["memeID"], True)
         
         try:
             description = rawRequest["description"]
-            unusedReturn = Engine.Graph.api.sourceMemePropertySet(eventCreationReport["memeID"], "description", description)
+            unusedReturn = rmlEngine.api.sourceMemePropertySet(eventCreationReport["memeID"], "description", description)
         except KeyError:
             pass
         except Exception as e:
@@ -1135,15 +2099,15 @@ def addEvent(moduleName, eventName):
         
         #scope - for now, we'll just take the default.  Strictly speaking, there should be rights management to scopes and views
         #    Future development
-        unusedReturn = Engine.Graph.api.sourceMemeMemberAdd(eventCreationReport["memeID"], "Agent.DefaultScope", 1)
-        unusedReturn = Engine.Graph.api.sourceMemeMemberAdd(eventCreationReport["memeID"], "Agent.DefaultView", 1)
+        unusedReturn = rmlEngine.api.sourceMemeMemberAdd(eventCreationReport["memeID"], "Agent.DefaultScope", 1)
+        unusedReturn = rmlEngine.api.sourceMemeMemberAdd(eventCreationReport["memeID"], "Agent.DefaultView", 1)
         
-        unusedReturn = Engine.Graph.api.sourceMemeCompile(eventCreationReport["memeID"], False)
-        unusedReturn = Engine.Graph.api.createEntityFromMeme(eventCreationReport["memeID"])
+        unusedReturn = rmlEngine.api.sourceMemeCompile(eventCreationReport["memeID"], False)
+        unusedReturn = rmlEngine.api.createEntityFromMeme(eventCreationReport["memeID"])
         
-        returnStr = "%s" %eventCreationReport["memeID"]  
+        response.body = json.dumps(eventCreationReport) 
         response.status = 200
-        return returnStr
+        return response
     except Exception:
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
@@ -1162,26 +2126,27 @@ def addIntent(moduleName, intentName):
         
     """
     try:
+        global rmlEngine
         rawRequest = request.POST.dict
-        intentCreationReport = Engine.Graph.api.sourceMemeCreate(intentName, moduleName, "Agent.IntentMM")
-        unusedReturn = Engine.Graph.api.sourceMemeSetSingleton(intentCreationReport["memeID"], True)
+        intentCreationReport = rmlEngine.api.sourceMemeCreate(intentName, moduleName, "Agent.IntentMM")
+        unusedReturn = rmlEngine.api.sourceMemeSetSingleton(intentCreationReport["memeID"], True)
         
         try:
-            unusedReturn = Engine.Graph.api.sourceMemePropertySet(intentCreationReport["memeID"], "description", rawRequest["description"])
+            unusedReturn = rmlEngine.api.sourceMemePropertySet(intentCreationReport["memeID"], "description", rawRequest["description"])
         except:
             pass
         
         #scope - for now, we'll just take the default.  Strictly speaking, there should be rights management to scopes and views
         #    Future development
-        unusedReturn = Engine.Graph.api.sourceMemeMemberAdd(intentCreationReport["memeID"], "Agent.DefaultScope", 1)
-        unusedReturn = Engine.Graph.api.sourceMemeMemberAdd(intentCreationReport["memeID"], "Agent.DefaultView", 1)
+        unusedReturn = rmlEngine.api.sourceMemeMemberAdd(intentCreationReport["memeID"], "Agent.DefaultScope", 1)
+        unusedReturn = rmlEngine.api.sourceMemeMemberAdd(intentCreationReport["memeID"], "Agent.DefaultView", 1)
         
-        unusedReturn = Engine.Graph.api.sourceMemeCompile(intentCreationReport["memeID"], False)
-        unusedReturn = Engine.Graph.api.createEntityFromMeme(intentCreationReport["memeID"])
+        unusedReturn = rmlEngine.api.sourceMemeCompile(intentCreationReport["memeID"], False)
+        unusedReturn = rmlEngine.api.createEntityFromMeme(intentCreationReport["memeID"])
         
-        returnStr = "%s" %intentCreationReport["memeID"]  
+        response.body = json.dumps(intentCreationReport)  
         response.status = 200
-        return returnStr
+        return response
     except Exception:
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
@@ -1212,10 +2177,10 @@ def addIntentMolecule(technicalName, creatorID, ownerID):
             raise e
         
         newUUID = addMolecule("Agent.IntentMolecule", "intent", technicalName, creatorID, ownerID, rawRequest)   
-        unusedPropertySetResults = Engine.Graph.api.setEntityPropertyValue(newUUID, "CallbackURL", callbackURL)     
-        returnStr = "%s" %newUUID
+        unusedPropertySetResults = rmlEngine.api.setEntityPropertyValue(newUUID, "CallbackURL", callbackURL)  
+        response.body = json.dumps({"entityUUID": newUUID})   
         response.status = 200
-        return returnStr       
+        return response       
     except Exception as unusedE: 
         fullerror = sys.exc_info()
         errorMsg = str(fullerror[1])
@@ -1240,12 +2205,12 @@ def addMolecueNode(technicalName, moleculeID):
             postParameterDescriptions (POSTParameterDescriptions)
     """    
     try:
-        newUUID = Engine.Graph.api.createEntityFromMeme("Agent.MoleculeNode")
-        unusedReturnResults = Engine.Graph.api.addEntityLink(moleculeID, newUUID)
-        unusedReturnResults = Engine.Graph.api.setEntityPropertyValue(newUUID, "technicalName", technicalName)       
-        returnStr = "%s" %newUUID
+        newUUID = rmlEngine.api.createEntityFromMeme("Agent.MoleculeNode")
+        unusedReturnResults = rmlEngine.api.addEntityLink(moleculeID, newUUID)
+        unusedReturnResults = rmlEngine.api.setEntityPropertyValue(newUUID, "technicalName", technicalName)       
+        response.body = json.dumps({"entityUUID": newUUID})
         response.status = 200
-        return returnStr       
+        return response       
     except Exception as unusedE: 
         fullerror = sys.exc_info()
         errorMsg = str(fullerror[1])
@@ -1257,14 +2222,14 @@ def addMolecueNode(technicalName, moleculeID):
 @route('/modeling/addPage/<moduleName>/<memeName>', method='GET')
 def addPage(moduleName, memeName):
     try:
-        creationReport = Engine.Graph.api.sourceMemeCreate(memeName, moduleName, "Agent.Page")
-        unusedReturn = Engine.Graph.api.sourceMemeSetSingleton(creationReport["memeID"], True)
-        unusedReturn = Engine.Graph.api.sourceMemeCompile(creationReport["memeID"], False)
-        unusedReturn = Engine.Graph.api.createEntityFromMeme(creationReport["memeID"])
+        creationReport = rmlEngine.api.sourceMemeCreate(memeName, moduleName, "Agent.Page")
+        unusedReturn = rmlEngine.api.sourceMemeSetSingleton(creationReport["memeID"], True)
+        unusedReturn = rmlEngine.api.sourceMemeCompile(creationReport["memeID"], False)
+        unusedReturn = rmlEngine.api.createEntityFromMeme(creationReport["memeID"])
         
-        returnStr = "%s" %creationReport["memeID"]  
+        response.body = json.dumps(creationReport) 
         response.status = 200
-        return returnStr     
+        return response     
     except Exception as unusedE: 
         fullerror = sys.exc_info()
         errorMsg = str(fullerror[1])
@@ -1288,26 +2253,26 @@ def addScope(moduleName, memeName):
             pass
         try:
             for pageMeme in pages:
-                unusedReturn = Engine.Graph.api.createEntityFromMeme(pageMeme)
+                unusedReturn = rmlEngine.api.createEntityFromMeme(pageMeme)
         except Exception as ex:
             fullerror = sys.exc_info()
             errorMsg = str(fullerror[1])
             tb = sys.exc_info()[2]
             raise Exceptions.POSTArgumentError(ex).with_traceback(tb)
         
-        creationReport = Engine.Graph.api.sourceMemeCreate(memeName, moduleName, "Agent.Scope")
-        unusedReturn = Engine.Graph.api.sourceMemeSetSingleton(creationReport["memeID"], True)
-        unusedReturn = Engine.Graph.api.sourceMemeMemberAdd(creationReport["memeID"], "Agent.DefaultPage", 1)
+        creationReport = rmlEngine.api.sourceMemeCreate(memeName, moduleName, "Agent.Scope")
+        unusedReturn = rmlEngine.api.sourceMemeSetSingleton(creationReport["memeID"], True)
+        unusedReturn = rmlEngine.api.sourceMemeMemberAdd(creationReport["memeID"], "Agent.DefaultPage", 1)
         
         for pageMeme in pages:
-            unusedReturn = Engine.Graph.api.sourceMemeMemberAdd(creationReport["memeID"], pageMeme, 1)
+            unusedReturn = rmlEngine.api.sourceMemeMemberAdd(creationReport["memeID"], pageMeme, 1)
         
-        unusedReturn = Engine.Graph.api.sourceMemeCompile(creationReport["memeID"], False)
-        unusedReturn = Engine.Graph.api.createEntityFromMeme(creationReport["memeID"])
+        unusedReturn = rmlEngine.api.sourceMemeCompile(creationReport["memeID"], False)
+        unusedReturn = rmlEngine.api.createEntityFromMeme(creationReport["memeID"])
         
-        returnStr = "%s" %creationReport["memeID"]  
+        response.body = json.dumps(creationReport) 
         response.status = 200
-        return returnStr     
+        return response     
     except Exception as unusedE: 
         fullerror = sys.exc_info()
         errorMsg = str(fullerror[1])
@@ -1338,10 +2303,10 @@ def addServiceMolecule(technicalName, creatorID, ownerID):
             raise e       
          
         newUUID = addMolecule("Agent.ServiceMolecule", "service", technicalName, creatorID, ownerID, rawRequest) 
-        unusedPropertySetResults = Engine.Graph.api.setEntityPropertyValue(newUUID, "CallbackURL", callbackURL)       
-        returnStr = "%s" %newUUID
+        unusedPropertySetResults = rmlEngine.api.setEntityPropertyValue(newUUID, "CallbackURL", callbackURL)       
+        response.body = json.dumps({"entityUUID": newUUID})
         response.status = 200
-        return returnStr       
+        return response       
     except Exception as unusedE: 
         fullerror = sys.exc_info()
         errorMsg = str(fullerror[1])
@@ -1363,9 +2328,19 @@ def addTag(moduleName, tagName):
         
         try:
             description = rawRequest["description"]
-            tagCreationReport = Engine.Graph.api.sourceMemeCreate(tagName, moduleName, "Agent.TagMM")
-            unusedReturn = Engine.Graph.api.sourceMemeSetSingleton(tagCreationReport["memeID"], True)
-            unusedReturn = Engine.Graph.api.sourceMemePropertySet(tagCreationReport["memeID"], "description", description)
+            tagCreationReport = rmlEngine.api.sourceMemeCreate(tagName, moduleName, "Agent.TagMM")
+            unusedReturn = rmlEngine.api.sourceMemeSetSingleton(tagCreationReport["memeID"], True)
+            unusedReturn = rmlEngine.api.sourceMemePropertySet(tagCreationReport["memeID"], "description", description)
+        except KeyError:
+            pass
+        except Exception as e:
+            raise e
+        
+        try:
+            parentTag = rawRequest["parentTag"]
+            tagCreationReport = rmlEngine.api.sourceMemeCreate(tagName, moduleName, "Agent.TagMM")
+            unusedReturn = rmlEngine.api.sourceMemeSetSingleton(tagCreationReport["memeID"], True)
+            unusedReturn = rmlEngine.api.sourceMemePropertySet(tagCreationReport["memeID"], "description", description)
         except KeyError:
             pass
         except Exception as e:
@@ -1373,15 +2348,15 @@ def addTag(moduleName, tagName):
         
         #scope - for now, we'll just take the default.  Strictly speaking, there should be rights management to scopes and views
         #    Future development
-        unusedReturn = Engine.Graph.api.sourceMemeMemberAdd(tagCreationReport["memeID"], "Agent.DefaultScope", 1)
-        unusedReturn = Engine.Graph.api.sourceMemeMemberAdd(tagCreationReport["memeID"], "Agent.DefaultView", 1)
+        unusedReturn = rmlEngine.api.sourceMemeMemberAdd(tagCreationReport["memeID"], "Agent.DefaultScope", 1)
+        unusedReturn = rmlEngine.api.sourceMemeMemberAdd(tagCreationReport["memeID"], "Agent.DefaultView", 1)
         
-        unusedReturn = Engine.Graph.api.sourceMemeCompile(tagCreationReport["memeID"], False)
-        unusedReturn = Engine.Graph.api.createEntityFromMeme(tagCreationReport["memeID"])
+        unusedReturn = rmlEngine.api.sourceMemeCompile(tagCreationReport["memeID"], False)
+        unusedReturn = rmlEngine.api.createEntityFromMeme(tagCreationReport["memeID"])
         
-        returnStr = "%s" %tagCreationReport["memeID"]  
+        response.body = json.dumps(tagCreationReport)  
         response.status = 200
-        return returnStr
+        return response
     except Exception:
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
@@ -1401,16 +2376,16 @@ def getMoleculeTags(moleculeID):
     '''
     try:
         returnList = []
-        tagList = Engine.Graph.api.getLinkCounterpartsByMetaMemeType(moleculeID, '*::Agent.TagMM')
+        tagList = rmlEngine.api.getLinkCounterpartsByMetaMemeType(moleculeID, '*::Agent.TagMM')
         for tagID in tagList:
-            tagMM = Engine.Graph.api.getEntityMemeType(tagID)
+            tagMM = rmlEngine.api.getEntityMemeType(tagID)
             returnList.append(tagMM)
         
         returnJSON = json.loads(returnList)
         
-        returnStr = "%s" %returnJSON  
+        response.body = json.dumps(returnJSON) 
         response.status = 200
-        return returnStr     
+        return response     
     except Exception as unusedE: 
         fullerror = sys.exc_info()
         errorMsg = str(fullerror[1])
@@ -1427,17 +2402,17 @@ def getIntentCatalog():
     '''
     try:
         
-        intentEntityList = Graph.api.getEntitiesByMetaMemeType("Agent.IntentMM")
+        intentEntityList =rmlEngine.api.getEntitiesByMetaMemeType("Agent.IntentMM")
         intentMemeDict = {}
         for intentEntityID in intentEntityList:
-            entityMemetype = Graph.api.getEntityMemeType(intentEntityID)
-            entityDescription = Graph.api.getEntityPropertyValue(intentEntityID, "description")
+            entityMemetype =rmlEngine.api.getEntityMemeType(intentEntityID)
+            entityDescription =rmlEngine.api.getEntityPropertyValue(intentEntityID, "description")
             intentMemeDict[entityMemetype] = {"intentID" : intentEntityID, "intentDescription" : entityDescription}
         returnJSON = json.loads(intentMemeDict)
         
-        returnStr = "%s" %returnJSON  
+        response.body = json.dumps(returnJSON) 
         response.status = 200
-        return returnStr     
+        return response     
     except Exception as unusedE: 
         fullerror = sys.exc_info()
         errorMsg = str(fullerror[1])
@@ -1466,18 +2441,18 @@ def getAvailableIntents(moleculeID):
     '''
     try:
         availableIntents = {}
-        serviceMoleculeList = Graph.api.getLinkCounterpartsByType(moleculeID, "Agent.MoleculeNode::*::Agent.MoleculeNode::Agent.ServiceMolecule")
-        dataMoleculeTagList = Graph.api.getLinkCounterpartsByMetaMemeType(moleculeID, "Agent.Landmark::Agent.TagMM")
+        serviceMoleculeList =rmlEngine.api.getLinkCounterpartsByType(moleculeID, "Agent.MoleculeNode::*::Agent.MoleculeNode::Agent.ServiceMolecule")
+        dataMoleculeTagList =rmlEngine.api.getLinkCounterpartsByMetaMemeType(moleculeID, "Agent.Landmark::Agent.TagMM")
         dataMoleculeTagSet = set(dataMoleculeTagList)
         for serviceMoleculeID in serviceMoleculeList:
-            serviceMolecule = Graph.api.getEntityMemeType(serviceMoleculeID)
-            serviceMoleculeTagList = Graph.api.getLinkCounterpartsByMetaMemeType(serviceMoleculeID, "Agent.Landmark::Agent.TagMM")
+            serviceMolecule =rmlEngine.api.getEntityMemeType(serviceMoleculeID)
+            serviceMoleculeTagList =rmlEngine.api.getLinkCounterpartsByMetaMemeType(serviceMoleculeID, "Agent.Landmark::Agent.TagMM")
             serviceMoleculeTagSet = set(serviceMoleculeTagList)
             if serviceMoleculeTagSet.issubset(dataMoleculeTagSet):
-                connectedIntentList = Engine.Graph.api.getLinkCounterpartsByMetaMemeType(serviceMoleculeID, 'Agent.IntentMM')
+                connectedIntentList = rmlEngine.api.getLinkCounterpartsByMetaMemeType(serviceMoleculeID, 'Agent.IntentMM')
                 for connectedIntentID in connectedIntentList:
-                    intentMeme = Graph.api.getEntityMemeType(connectedIntentID)
-                    intentDescription = Graph.api.getEntityPropertyValue(connectedIntentID, "description")
+                    intentMeme =rmlEngine.api.getEntityMemeType(connectedIntentID)
+                    intentDescription =rmlEngine.api.getEntityPropertyValue(connectedIntentID, "description")
                     try:
                         unusedIntentMemeDict = availableIntents[intentMeme]
                         availableIntents[intentMeme][serviceMolecule] = {"intentID" : connectedIntentID, "intentDescription" : intentDescription}
@@ -1486,9 +2461,9 @@ def getAvailableIntents(moleculeID):
 
         returnJSON = json.loads(availableIntents)
         
-        returnStr = "%s" %returnJSON  
+        response.body = json.dumps(returnJSON)  
         response.status = 200
-        return returnStr     
+        return response     
     except Exception as unusedE: 
         fullerror = sys.exc_info()
         errorMsg = str(fullerror[1])
@@ -1504,12 +2479,12 @@ def getTagCatalog():
     '''
     try:
         returnDict = {}
-        tagList = Engine.Graph.api.getEntitiesByMetaMemeType('Agent.TagMM')
+        tagList = rmlEngine.api.getEntitiesByMetaMemeType('Agent.TagMM')
         for tagID in tagList:
-            tagMM = Engine.Graph.api.getEntityMemeType(tagID)
-            dataType = Engine.Graph.api.getEntityPropertyValue(tagID, "DataType")
+            tagMM = rmlEngine.api.getEntityMemeType(tagID)
+            dataType = rmlEngine.api.getEntityPropertyValue(tagID, "DataType")
             if dataType in ["urlPOST", "urlGET"]:
-                fullDefPath = Engine.Graph.api.getEntityPropertyValue(tagID, "URLDefinitionPath")
+                fullDefPath = rmlEngine.api.getEntityPropertyValue(tagID, "URLDefinitionPath")
                 splitDefPath = fullDefPath.split("::")
                 dataTypeDict = {"DataType" : dataType, "URLDefinitionMeme" : splitDefPath[1]}
             else:
@@ -1518,9 +2493,9 @@ def getTagCatalog():
 
         returnJSON = json.loads(returnDict)
         
-        returnStr = "%s" %returnJSON  
+        response.body = json.dumps(returnJSON)  
         response.status = 200
-        return returnStr    
+        return response    
     except Exception as unusedE: 
         fullerror = sys.exc_info()
         errorMsg = str(fullerror[1])
@@ -1536,16 +2511,16 @@ def getTagList():
     '''
     try:
         returnList = []
-        tagList = Engine.Graph.api.getEntitiesByMetaMemeType('Agent.TagMM')
+        tagList = rmlEngine.api.getEntitiesByMetaMemeType('Agent.TagMM')
         for tagID in tagList:
-            tagMM = Engine.Graph.api.getEntityMemeType(tagID)
+            tagMM = rmlEngine.api.getEntityMemeType(tagID)
             returnList.append(tagMM)
         
         returnJSON = json.loads(returnList)
         
-        returnStr = "%s" %returnJSON  
+        response.body = json.dumps(returnJSON)  
         response.status = 200
-        return returnStr    
+        return response    
     except Exception as unusedE: 
         fullerror = sys.exc_info()
         errorMsg = str(fullerror[1])
@@ -1563,8 +2538,8 @@ def offerIntentService(intentServiceMoleculeID, intent):
         #First, check to see that the desired Intent exists.
         intentEntityID = None
         try:
-            intentEntityID = Engine.Graph.api.createEntityFromMeme(intent)
-            intentEntityType = Engine.Graph.api.getEntityMetaMemeType(intentEntityID)
+            intentEntityID = rmlEngine.api.createEntityFromMeme(intent)
+            intentEntityType = rmlEngine.api.getEntityMetaMemeType(intentEntityID)
             if intentEntityType != 'Agent.IntentMM':
                 errorMessage = "%s is not an intent" %intent
                 raise Exceptions.IntentError(errorMessage)                
@@ -1574,7 +2549,7 @@ def offerIntentService(intentServiceMoleculeID, intent):
         
         #And only intent service molecules can support intents.
         try:
-            intentMoleculeType = Engine.Graph.api.getEntityMemeType(intentServiceMoleculeID)
+            intentMoleculeType = rmlEngine.api.getEntityMemeType(intentServiceMoleculeID)
             if intentMoleculeType != 'Agent.IntentMolecule':
                 errorMessage = "%s is not an intent service molecule." %intentServiceMoleculeID
                 raise Exceptions.IntentServiceMoleculeError(errorMessage)                
@@ -1583,19 +2558,19 @@ def offerIntentService(intentServiceMoleculeID, intent):
             raise Exceptions.IntentError(errorMessage)
         
         #Next, check to see that we don't already support an intent.  If we do, that support will have to be revoked first.
-        existingIntentList = Engine.Graph.api.getLinkCounterpartsByMetaMemeType(intentServiceMoleculeID, 'Agent.IntentMM')
+        existingIntentList = rmlEngine.api.getLinkCounterpartsByMetaMemeType(intentServiceMoleculeID, 'Agent.IntentMM')
         if len(existingIntentList) > 0:
-            existingMemeType = Engine.Graph.api.getEntityMemeType(existingIntentList[0])
+            existingMemeType = rmlEngine.api.getEntityMemeType(existingIntentList[0])
             errorMessage = "Intent Service molecule %s already supports intent %s.  Support for %s can't be declared unless prior support is revoked" %(intentServiceMoleculeID, existingMemeType, intent)
             raise Exceptions.RedundantIntentError(errorMessage)
         
         #Still here and not thrown any exceptions?  Ok, we can assign attach the service to the intent
-        returnResults = Engine.Graph.api.addEntityLink(intentServiceMoleculeID, intentEntityID)
+        returnResults = rmlEngine.api.addEntityLink(intentServiceMoleculeID, intentEntityID)
         returnResultsJson = json.dumps(returnResults)
         
-        returnStr = "%s" %(returnResultsJson)
+        response.body = json.dumps(returnResultsJson)
         response.status = 200
-        return returnStr
+        return response
    
     except Exception as unusedE: 
         fullerror = sys.exc_info()
@@ -1611,25 +2586,25 @@ def revokeIntentService(intentServiceMoleculeID):
         Remove any intent servicing form an intent service entity
     '''
     try:
-        intentMoleculeType = Engine.Graph.api.getEntityMemeType(intentServiceMoleculeID)
+        intentMoleculeType = rmlEngine.api.getEntityMemeType(intentServiceMoleculeID)
         if intentMoleculeType != 'Agent.IntentMolecule':
             errorMessage = "%s is not an intent service molecule." %intentServiceMoleculeID
             raise Exceptions.IntentServiceMoleculeError(errorMessage)
         
         #Next, check to see that we don't already support an intent.  If we do, that support will have to be revoked first.
-        existingIntentList = Engine.Graph.api.getLinkCounterpartsByMetaMemeType(intentServiceMoleculeID, 'Agent.IntentMM')
+        existingIntentList = rmlEngine.api.getLinkCounterpartsByMetaMemeType(intentServiceMoleculeID, 'Agent.IntentMM')
         if len(existingIntentList) < 1:
             returnResults = "Intent Service molecule %s has no declared intents" %(intentServiceMoleculeID)
             raise Exceptions.IntentError(errorMessage)
         else:
             for existingIntentID in existingIntentList:
-                returnResults = Engine.Graph.api.removeEntityLink(intentServiceMoleculeID, existingIntentID)
+                returnResults = rmlEngine.api.removeEntityLink(intentServiceMoleculeID, existingIntentID)
  
         returnResultsJson = json.dumps(returnResults)
         
-        returnStr = "%s" %(returnResultsJson)
+        response.body = json.dumps(returnResultsJson)
         response.status = 200
-        return returnStr
+        return response
    
     except Exception as unusedE: 
         fullerror = sys.exc_info()
@@ -1664,9 +2639,9 @@ def addProperty(moduleName, propertyName):
                     "IntKeyValuePairList"] 
             if dataType not in validTypes:
                 raise Exceptions.UndefinedValueListError("Property %s has data type %s") %(propertyName, dataType)
-            tagCreationReport = Engine.Graph.api.sourceMemeCreate(propertyName, moduleName, "Agent.RESTPropertyMM")
-            unusedReturn = Engine.Graph.api.sourceMemeSetSingleton(tagCreationReport["memeID"], True)
-            unusedReturn = Engine.Graph.api.sourceMemePropertySet(tagCreationReport["memeID"], "dataType", dataType)
+            tagCreationReport = rmlEngine.api.sourceMemeCreate(propertyName, moduleName, "Agent.RESTPropertyMM")
+            unusedReturn = rmlEngine.api.sourceMemeSetSingleton(tagCreationReport["memeID"], True)
+            unusedReturn = rmlEngine.api.sourceMemePropertySet(tagCreationReport["memeID"], "dataType", dataType)
         except KeyError as e:
             raise Exceptions.POSTArgumentError("Property %s needs a data type") %propertyName
         except Exception as e:
@@ -1674,14 +2649,14 @@ def addProperty(moduleName, propertyName):
         
         try:
             description = rawRequest["description"]
-            unusedReturn = Engine.Graph.api.sourceMemePropertySet(tagCreationReport["memeID"], "description", description)
+            unusedReturn = rmlEngine.api.sourceMemePropertySet(tagCreationReport["memeID"], "description", description)
         except KeyError:
             pass
         except Exception as e:
             raise e
         
-        unusedReturn = Engine.Graph.api.sourceMemeCompile(tagCreationReport["memeID"], False)
-        unusedReturn = Engine.Graph.api.createEntityFromMeme(tagCreationReport["memeID"])
+        unusedReturn = rmlEngine.api.sourceMemeCompile(tagCreationReport["memeID"], False)
+        unusedReturn = rmlEngine.api.createEntityFromMeme(tagCreationReport["memeID"])
         
         returnStr = "%s" %tagCreationReport["memeID"]  
         response.status = 200
@@ -1702,11 +2677,11 @@ def getPropertyCatalog():
     '''
     try:
         
-        propertyEntityList = Graph.api.getEntitiesByMetaMemeType("Agent.RESTPropertyMM")
+        propertyEntityList =rmlEngine.api.getEntitiesByMetaMemeType("Agent.RESTPropertyMM")
         propertyMemeDict = {}
         for propertyEntityID in propertyEntityList:
-            entityMemetype = Graph.api.getEntityMemeType(propertyEntityID)
-            entityDescription = Graph.api.getEntityPropertyValue(propertyEntityID, "description")
+            entityMemetype = rmlEngine.api.getEntityMemeType(propertyEntityID)
+            entityDescription = rmlEngine.api.getEntityPropertyValue(propertyEntityID, "description")
             propertyMemeDict[entityMemetype] = {"propertyID" : propertyEntityID, "propertyDescription" : entityDescription}
         returnJSON = json.loads(propertyMemeDict)
         
@@ -1729,9 +2704,9 @@ def getPropertyList():
     '''
     try:
         returnList = []
-        propertyEntityList = Engine.Graph.api.getEntitiesByMetaMemeType('Agent.RESTPropertyMM')
+        propertyEntityList = rmlEngine.api.getEntitiesByMetaMemeType('Agent.RESTPropertyMM')
         for propertyEntityID in propertyEntityList:
-            entityMemetype = Graph.api.getEntityMemeType(propertyEntityID)
+            entityMemetype = rmlEngine.api.getEntityMemeType(propertyEntityID)
             returnList.append(entityMemetype)
         
         returnJSON = json.loads(returnList)
@@ -1757,8 +2732,8 @@ def assignTagProperty(tagName, propertyName):
         #First, check to see that the desired tag exists.
         tagEntityID = None
         try:
-            tagEntityID = Engine.Graph.api.createEntityFromMeme(tagName)
-            tagEntityType = Engine.Graph.api.getEntityMetaMemeType(tagEntityID)
+            tagEntityID = rmlEngine.api.createEntityFromMeme(tagName)
+            tagEntityType = rmlEngine.api.getEntityMetaMemeType(tagEntityID)
             if tagEntityType != 'Agent.TagMM':
                 errorMessage = "%s is not a tag" %tagName
                 raise Exceptions.IntentError(errorMessage)                
@@ -1769,8 +2744,8 @@ def assignTagProperty(tagName, propertyName):
         #First, check to see that the desired property name exists.
         propertyEntityID = None
         try:
-            propertyEntityID = Engine.Graph.api.createEntityFromMeme(propertyName)
-            propertyEntityType = Engine.Graph.api.getEntityMetaMemeType(propertyEntityID)
+            propertyEntityID = rmlEngine.api.createEntityFromMeme(propertyName)
+            propertyEntityType = rmlEngine.api.getEntityMetaMemeType(propertyEntityID)
             if propertyEntityType != 'Agent.RESTPropertyMM':
                 errorMessage = "%s is not a property" %propertyName
                 raise Exceptions.IntentError(errorMessage)                
@@ -1779,7 +2754,7 @@ def assignTagProperty(tagName, propertyName):
             raise Exceptions.IntentError(errorMessage)
         
         #Still here and not thrown any exceptions?  Ok, we can assign attach the service to the intent
-        returnResults = Engine.Graph.api.addEntityLink(tagEntityID, propertyEntityID)
+        returnResults = rmlEngine.api.addEntityLink(tagEntityID, propertyEntityID)
         returnResultsJson = json.dumps(returnResults)
         
         returnStr = "%s" %(returnResultsJson)
@@ -1803,8 +2778,8 @@ def removeTagProperty(tagName, propertyName):
         #First, check to see that the desired tag exists.
         tagEntityID = None
         try:
-            tagEntityID = Engine.Graph.api.createEntityFromMeme(tagName)
-            tagEntityType = Engine.Graph.api.getEntityMetaMemeType(tagEntityID)
+            tagEntityID = rmlEngine.api.createEntityFromMeme(tagName)
+            tagEntityType = rmlEngine.api.getEntityMetaMemeType(tagEntityID)
             if tagEntityType != 'Agent.TagMM':
                 errorMessage = "%s is not a tag" %tagName
                 raise Exceptions.IntentError(errorMessage)                
@@ -1815,8 +2790,8 @@ def removeTagProperty(tagName, propertyName):
         #First, check to see that the desired property name exists.
         propertyEntityID = None
         try:
-            propertyEntityID = Engine.Graph.api.createEntityFromMeme(propertyName)
-            propertyEntityType = Engine.Graph.api.getEntityMetaMemeType(propertyEntityID)
+            propertyEntityID = rmlEngine.api.createEntityFromMeme(propertyName)
+            propertyEntityType = rmlEngine.api.getEntityMetaMemeType(propertyEntityID)
             if propertyEntityType != 'Agent.RESTPropertyMM':
                 errorMessage = "%s is not a property" %propertyName
                 raise Exceptions.IntentError(errorMessage)                
@@ -1825,7 +2800,7 @@ def removeTagProperty(tagName, propertyName):
             raise Exceptions.IntentError(errorMessage)
         
         #Still here and not thrown any exceptions?  Ok, we can assign attach the service to the intent
-        returnResults = Engine.Graph.api.addEntityLink(tagEntityID, propertyEntityID)
+        returnResults = rmlEngine.api.addEntityLink(tagEntityID, propertyEntityID)
         returnResultsJson = json.dumps(returnResults)
         
         returnStr = "%s" %(returnResultsJson)
@@ -1846,10 +2821,10 @@ def getMoleculeAPIDefinition(moleculeID):
     '''
     try:
         availableAPIProperties = {}
-        propertyEntityList = Graph.api.getLinkCounterpartsByMetaMemeType(moleculeID, "Agent.MoleculeNodeMM::Agent.TagMM::Agent.RESTPropertyMM")
+        propertyEntityList = rmlEngine.api.getLinkCounterpartsByMetaMemeType(moleculeID, "Agent.MoleculeNodeMM::Agent.TagMM::Agent.RESTPropertyMM")
         for propertyEntityID in propertyEntityList:
-            entityMemetype = Graph.api.getEntityMemeType(propertyEntityID)
-            entityDescription = Graph.api.getEntityPropertyValue(propertyEntityID, "description")
+            entityMemetype = rmlEngine.api.getEntityMemeType(propertyEntityID)
+            entityDescription = rmlEngine.api.getEntityPropertyValue(propertyEntityID, "description")
             availableAPIProperties[entityMemetype] = {"propertyID" : propertyEntityID, "propertyDescription" : entityDescription}
         returnJSON = json.loads(availableAPIProperties)
         
@@ -1874,15 +2849,15 @@ def declareEvent(moleculeID, eventName):
     '''
     try:
 
-        eventEntityList = Engine.Graph.api.getEntitiesByMemeType(eventName)
+        eventEntityList = rmlEngine.api.getEntitiesByMemeType(eventName)
         if len(eventEntityList) < 1:
             raise Exceptions.NoSuchEntityError("No such event %s") %eventName
          
-        moleculeMemetype = Graph.api.getEntityMemeType(moleculeID)
+        moleculeMemetype = rmlEngine.api.getEntityMemeType(moleculeID)
         if moleculeMemetype != "Agent.Molecule":
             raise Exceptions.MissingAgentError("Entity %s is of type %s.  It shoulf be of type Agent.Molecule") %(moleculeID, moleculeMemetype)
             
-        returnResults = Engine.Graph.api.addEntityLink(moleculeID, eventEntityList[0])
+        returnResults = rmlEngine.api.addEntityLink(moleculeID, eventEntityList[0])
         returnResultsJson = json.dumps(returnResults)
         
         returnStr = "%s" %returnResultsJson  
@@ -1904,20 +2879,20 @@ def disableEvent(moleculeID, eventName):
     '''
     try:
 
-        eventEntityList = Engine.Graph.api.getEntitiesByMemeType(eventName)
+        eventEntityList = rmlEngine.api.getEntitiesByMemeType(eventName)
         if len(eventEntityList) < 1:
             raise Exceptions.NoSuchEntityError("No such event %s") %eventName
         else:
-            eventMM = Engine.Graph.api.getEntityMetaMemeType(eventEntityList[0])
+            eventMM = rmlEngine.api.getEntityMetaMemeType(eventEntityList[0])
             if eventMM != "Agent.EventMM":
                 raise Exceptions.MissingAgentError("The event parameter %s refers to an entity of metameme type is of type %s.  It should be of type Agent.EventMM") %(eventName, eventMM)
 
          
-        moleculeMemetype = Graph.api.getEntityMemeType(moleculeID)
+        moleculeMemetype = rmlEngine.api.getEntityMemeType(moleculeID)
         if moleculeMemetype != "Agent.Molecule":
             raise Exceptions.MissingAgentError("Entity %s is of type %s.  It shoulf be of type Agent.Molecule") %(moleculeID, moleculeMemetype)
             
-        returnResults = Engine.Graph.api.removeEntityLink(moleculeID, eventEntityList[0])
+        returnResults = rmlEngine.api.removeEntityLink(moleculeID, eventEntityList[0])
         returnResultsJson = json.dumps(returnResults)
         
         returnStr = "%s" %returnResultsJson  
@@ -1941,21 +2916,21 @@ def attachEventListener(moleculeID, eventName):
     '''
     try:
 
-        eventEntityList = Engine.Graph.api.getEntitiesByMemeType(eventName)
+        eventEntityList = rmlEngine.api.getEntitiesByMemeType(eventName)
         if len(eventEntityList) < 1:
             raise Exceptions.NoSuchEntityError("No such event %s") %eventName
         else:
-            eventMM = Engine.Graph.api.getEntityMetaMemeType(eventEntityList[0])
+            eventMM = rmlEngine.api.getEntityMetaMemeType(eventEntityList[0])
             if eventMM != "Agent.EventMM":
                 raise Exceptions.MissingAgentError("The event parameter %s refers to an entity of metameme type is of type %s.  It should be of type Agent.EventMM") %(eventName, eventMM)
          
-        moleculeMemetype = Graph.api.getEntityMemeType(moleculeID)
+        moleculeMemetype = rmlEngine.api.getEntityMemeType(moleculeID)
         if moleculeMemetype != "Agent.ServiceMolecule":
             raise Exceptions.MissingAgentError("Entity %s is of type %s.  It shoulf be of type Agent.ServiceMolecule") %(moleculeID, moleculeMemetype)
         
         
             
-        returnResults = Engine.Graph.api.addEntityLink(moleculeID, eventEntityList[0])
+        returnResults = rmlEngine.api.addEntityLink(moleculeID, eventEntityList[0])
         returnResultsJson = json.dumps(returnResults)
         
         returnStr = "%s" %returnResultsJson  
@@ -1976,25 +2951,25 @@ def getEventListeners(moleculeID):
         Get the full catalog of the services that are listening to the current molecule's events.       
     '''
     try:
-        moleculeMemetype = Graph.api.getEntityMemeType(moleculeID)
+        moleculeMemetype = rmlEngine.api.getEntityMemeType(moleculeID)
         if moleculeMemetype != "Agent.Molecule":
             raise Exceptions.MissingAgentError("Entity %s is of type %s.  It shoulf be of type Agent.Molecule") %(moleculeID, moleculeMemetype)
         
         availableEventListeners = {}
-        serviceMoleculeList = Graph.api.getLinkCounterpartsByType(moleculeID, "Agent.MoleculeNode::*::Agent.MoleculeNode::Agent.ServiceMolecule")
-        dataMoleculeTagList = Graph.api.getLinkCounterpartsByMetaMemeType(moleculeID, "Agent.Landmark::Agent.TagMM")
+        serviceMoleculeList = rmlEngine.api.getLinkCounterpartsByType(moleculeID, "Agent.MoleculeNode::*::Agent.MoleculeNode::Agent.ServiceMolecule")
+        dataMoleculeTagList = rmlEngine.api.getLinkCounterpartsByMetaMemeType(moleculeID, "Agent.Landmark::Agent.TagMM")
         dataMoleculeTagSet = set(dataMoleculeTagList)
         for serviceMoleculeID in serviceMoleculeList:
-            serviceMoleculeTagList = Graph.api.getLinkCounterpartsByMetaMemeType(serviceMoleculeID, "Agent.Landmark::Agent.TagMM")
+            serviceMoleculeTagList = rmlEngine.api.getLinkCounterpartsByMetaMemeType(serviceMoleculeID, "Agent.Landmark::Agent.TagMM")
             serviceMoleculeTagSet = set(serviceMoleculeTagList)
             if serviceMoleculeTagSet.issubset(dataMoleculeTagSet):
-                connectedEventList = Engine.Graph.api.getLinkCounterpartsByMetaMemeType(serviceMoleculeID, 'Agent.EventMM')
+                connectedEventList = rmlEngine.api.getLinkCounterpartsByMetaMemeType(serviceMoleculeID, 'Agent.EventMM')
                 for connectedEventID in connectedEventList:
-                    connectedDataList = Engine.Graph.api.getLinkCounterpartsByMetaMemeType(serviceMoleculeID, 'Agent.Molecule') 
+                    connectedDataList = rmlEngine.api.getLinkCounterpartsByMetaMemeType(serviceMoleculeID, 'Agent.Molecule') 
                     if moleculeID in connectedDataList:
-                        eventMeme = Graph.api.getEntityMemeType(connectedEventID)
-                        eventDescription = Graph.api.getEntityPropertyValue(serviceMoleculeID, "description")
-                        eventTechnicalName = Graph.api.getEntityPropertyValue(serviceMoleculeID, "technicalName")
+                        eventMeme = rmlEngine.api.getEntityMemeType(connectedEventID)
+                        eventDescription = rmlEngine.api.getEntityPropertyValue(serviceMoleculeID, "description")
+                        eventTechnicalName = rmlEngine.api.getEntityPropertyValue(serviceMoleculeID, "technicalName")
                         try:
                             unusedIntentMemeDict = availableEventListeners[eventMeme]
                             availableEventListeners[eventMeme][eventTechnicalName] = {"eventDescription" : eventDescription}
@@ -2025,7 +3000,7 @@ def action(ownerID, subjectID, nodeID):
         A Trigger an event 
         Fires an Intentsity.Event action, with the 
     """
-    
+    global rmlEngine
     try:
         rawRequest = request.POST.dict
         actionID = rawRequest["actionID"]
@@ -2052,9 +3027,9 @@ def action(ownerID, subjectID, nodeID):
         
         
         #test that the entities exist
-        unusedSubjectTemplate = Engine.api.getEntityMemeType(subjectID)
-        unusedControllerTemplate = Engine.api.getEntityMemeType(ownerID)
-        unusedNodeTemplate = Engine.api.getEntityMemeType(nodeID)
+        unusedSubjectTemplate = rmlEngine.api.getEntityMemeType(subjectID)
+        unusedControllerTemplate = rmlEngine.api.getEntityMemeType(ownerID)
+        unusedNodeTemplate = rmlEngine.api.getEntityMemeType(nodeID)
         
         actionID = "Intentsity.Event"
         ownerID = ownerID
@@ -2066,7 +3041,7 @@ def action(ownerID, subjectID, nodeID):
 
         
         actionInvocation = Engine.ActionRequest(actionID, ationInsertionTypes.APPEND, rtparams, subjectID, objectID, ownerID)
-        Engine.aQ.put(actionInvocation)
+        rmlEngine.aQ.put(actionInvocation)
         
         returnStr = "Action posted"
         response.status = 200
@@ -2086,12 +3061,12 @@ def fireevent(ownerID, subjectID, nodeID):
         A Trigger an event 
         Fires an Intentsity.Event action, with the 
     """
-    
+    global rmlEngine
     try:
         #test that the entities exist
-        unusedSubjectTemplate = Engine.api.getEntityMemeType(subjectID)
-        unusedControllerTemplate = Engine.api.getEntityMemeType(ownerID)
-        unusedNodeTemplate = Engine.api.getEntityMemeType(nodeID)
+        unusedSubjectTemplate = rmlEngine.api.getEntityMemeType(subjectID)
+        unusedControllerTemplate = rmlEngine.api.getEntityMemeType(ownerID)
+        unusedNodeTemplate = rmlEngine.api.getEntityMemeType(nodeID)
         
         actionID = "Intentsity.Event"
         ownerID = ownerID
@@ -2103,7 +3078,7 @@ def fireevent(ownerID, subjectID, nodeID):
 
         
         actionInvocation = Engine.ActionRequest(actionID, ationInsertionTypes.APPEND, rtparams, subjectID, objectID, ownerID)
-        Engine.aQ.put(actionInvocation)
+        rmlEngine.aQ.put(actionInvocation)
         
         returnStr = "Action posted"
         response.status = 200
@@ -2122,16 +3097,17 @@ def invokeintent(moleculeID, intentID):
     """  A Trigger an intent.  moleculeID is calling molecule. intentID is the registered intent """
     
     try:
+        global rmlEngine
         actionID = "Intentsity.Intent"
         ownerID = None
         rtparams = {} 
         
         #test that the entities exist
-        unusedEntityTemplateS = Engine.api.getEntityMemeType(moleculeID)
-        unusedEntityTemplateS = Engine.api.getEntityMemeType(intentID)
+        unusedEntityTemplateS = rmlEngine.api.getEntityMemeType(moleculeID)
+        unusedEntityTemplateS = rmlEngine.api.getEntityMemeType(intentID)
         
         actionInvocation = Engine.ActionRequest(actionID, ationInsertionTypes.APPEND, rtparams, moleculeID, intentID, ownerID)
-        Engine.aQ.put(actionInvocation)
+        rmlEngine.aQ.put(actionInvocation)
         
         returnStr = "Action posted"
         response.status = 200
@@ -2183,4 +3159,13 @@ def getStimulusReports(broadcasterID):
     
     
 if __name__ == '__main__':
-    run(host='localhost', port=8080)
+    parser = argparse.ArgumentParser(description="Intentsity")
+
+    parser.add_argument("-p", "--port", type=int, help="|Int| The start of the port range for Intentsity")
+    
+    args = parser.parse_args()
+    
+    if args.port:
+        basePort = args.port
+
+    run(host='localhost', port=basePort)

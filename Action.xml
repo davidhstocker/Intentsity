@@ -3,6 +3,17 @@
 	xsi:schemaLocation="https://raw.githubusercontent.com/davidhstocker/Memetic/master/Memetic/Memetic.xsd"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
+	<ListOfPropertyRestriction>
+		<PropertyRestriction id="LinkType">
+			<RestrictionValueString>Atomic</RestrictionValueString>
+			<RestrictionValueString>SubAtomic</RestrictionValueString>
+		</PropertyRestriction>
+		<PropertyRestriction id="InsertionType">
+			<RestrictionValueString>Append</RestrictionValueString>
+			<RestrictionValueString>Head</RestrictionValueString>
+			<RestrictionValueString>HeadClear</RestrictionValueString>
+		</PropertyRestriction>
+	</ListOfPropertyRestriction>
 	
 	
 	<ListOfMetaMeme>	

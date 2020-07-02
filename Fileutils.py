@@ -9,12 +9,12 @@ import os
 import codecs
 import zipfile
 import importlib
+import sys
 
 import Graphyne.Graph as Graph
 
 
 #globals
-moduleName = 'fileutils'
 logType = Graph.logTypes.ENGINE
 logLevel = Graph.LogLevel()
 tiogaHome = os.path.dirname(os.path.abspath(__file__))
@@ -70,7 +70,7 @@ def getCodePageFromFile(fileURI):
 # A recursive examiner for package subdirectories
 def walkDirectory(workingDir, packagePath):
     #Go through the subdirectory and load the files up 
-    #method = moduleName + '.' + 'walkDirectory'
+    #method = sys.modules[__name__] + '.' + 'walkDirectory'
     
     if packagePath is None:
         #Graph.logQ.put( [logType , logLevel.DEBUG , method , 'Branch is directly off the root'])
@@ -121,7 +121,7 @@ def walkDirectory(workingDir, packagePath):
 
 
 def walkRepository():
-    method = moduleName + '.' + 'walkRepository'
+    method = sys.modules[__name__] + '.' + 'walkRepository'
 
     dataLocation = os.path.join(tiogaHome, 'IntentsityRepository', 'IntentsitySchema')
     #Graph.logQ.put( [logType , logLevel.DEBUG , method , 'RML Repository location is %s' % dataLocation])
