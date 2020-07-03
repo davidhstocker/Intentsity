@@ -1895,15 +1895,17 @@ def registerCreatorDataCallbackURL():
 
         
         returnStr = "Assigned dataCallbackURL %s to owner %s " %(dataCallbackURL, creatorID)
+        response.body = json.dumps({"status": returnStr})
         response.status = 200
-        return returnStr
+        return response
     except Exception as unusedE: 
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
         returnStr = "Failed to assign dataCallbackURL to  new Agent.Creator Entity.  %s, %s" %(errorID, errorMsg)
+        response.body = json.dumps({"status": returnStr})
         response.status = 500
-        return returnStr
+        return response
     
     
     
