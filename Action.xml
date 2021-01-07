@@ -124,7 +124,7 @@
 				<MetaMemeID>StateChangeBase</MetaMemeID>
 				<MetaMemeID>Graphyne.Condition.MultiAgentAttributeArgument</MetaMemeID>
 			</MetaMemeExtensions>
-			<MetaMemeProperty name="LinkType" type="integer" restriction="LinkType" constrained="true"/>
+			<MetaMemeProperty name="LinkType" type="string" restriction="LinkType" constrained="true"/>
 		</MetaMeme>
 		<MetaMeme id="SimpleStateChange">
 			<MetaMemeExtensions>

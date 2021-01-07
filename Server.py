@@ -4,7 +4,6 @@ Created on June 13, 2018
 @author: David Stocker
 '''
 
-########  Generated Imports - Do not edit  ####################
 from bottle import route, run, request, template, abort, static_file, response
 import json
 import time
@@ -25,9 +24,11 @@ class IntentTagSchema(object):
         A small helper class for determining what tags and interfaces an intent requires
     """ 
     tags = {}
-    requiredInterfaces = []  #Any tags that
+    
     
     def __init__(self, intentName):
+        self.tags = ""
+        self.requiredInterfaces = []  #Any tags that
         self.intentName = intentName
         
     def addTag(self, tagName, tagCardinality):
@@ -48,10 +49,10 @@ class EventTagSchema(object):
     """
         A small helper class for determining what tags and interfaces an event requires
     """ 
-    tags = {}
-    requiredInterfaces = []  #Any tags that
     
     def __init__(self, eventName):
+        self.tags = ""
+        self.requiredInterfaces = []  #Any tags that
         self.eventName = eventName
         
     def addTag(self, tagName, tagCardinality):
@@ -1855,7 +1856,11 @@ def addCreator():
     
 @route('/modeling/registerCreatorDataCallbackURL', method='POST')
 def registerCreatorDataCallbackURL():
-    
+    """
+        params:
+            creatorID 
+            dataCallbackURL
+    """ 
     try:
         global rmlEngine
         rawRequest = request.POST.dict
@@ -1911,7 +1916,11 @@ def registerCreatorDataCallbackURL():
     
 @route('/modeling/registerCreatorStimulusCallbackURL', method='POST')
 def registerCreatorStimulusCallbackURL():
-    
+    """
+        params:
+            creatorID 
+            stimulusCallbackURL
+    """    
     try:
         global rmlEngine
         rawRequest = request.POST.dict
@@ -1990,6 +1999,11 @@ def addOwner():
 #Graph Methods - These handlers expose the Graphyene API via REST
 @route('/modeling/registerOwnerCallbackURL', method='POST')
 def registerOwnerCallbackURL():
+    """
+        params:
+            ownerID 
+            stimulusCallbackURL
+    """
     
     try:
         global rmlEngine
@@ -2041,6 +2055,157 @@ def registerOwnerCallbackURL():
         returnStr = "Failed to create new Agent.Owner Entity.  %s, %s" %(errorID, errorMsg)
         response.status = 500
         return returnStr
+    
+
+@route('/admin/broadcastersubscribe', method='POST')
+def broadcasterSubscribe():
+    """
+        params:
+            ownerID 
+            stimulusCallbackURL
+    """   
+    try:
+        rawRequest = request.POST.dict 
+        for rawKey in rawRequest.keys():
+            keyVal = rawKey
+        jsonPayload = json.loads(keyVal)
+        
+        try:
+            entityID = jsonPayload["entityID"]
+            entityUUID = uuid.UUID(entityID)
+        except KeyError:
+            raise Exceptions.MismatchedPOSTParametersError("Request has no valid entityID post patameter")
+        except Exception as e:
+            raise e
+        
+        try:
+            entityType = rmlEngine.api.getEntityMemeType(entityUUID)
+        except Exception as e:
+            raise Exceptions.NoSuchEntityError("ownerID parameter value %s does not exist." %entityID)
+        
+        if (entityType != "Agent.Owner") and (entityType != "Agent.Creator"):
+            raise Exceptions.TemplatePathError("entityID parameter value %s refers to an entity of type %s.  Only data owners and data creators (Agent.Owner and Agent.Creator) may subscribe to broadbasters" %(entityID, entityType))
+        
+        try:
+            callbackURL = rawRequest["CallbackURL"]
+        except KeyError:
+            raise Exceptions.MismatchedPOSTParametersError("Data Modlecule has no url.  Molecule not created")
+        except Exception as e:
+            raise e
+        
+        newUUID = addMolecule("Agent.Molecule", "data", technicalName, creatorID, ownerID, rawRequest)    
+        unusedPropertySetResults = rmlEngine.api.setEntityPropertyValue(newUUID, "CallbackURL", callbackURL)    
+        returnStr = "%s" %newUUID
+        response.body = json.dumps({"entityUUID": newUUID})
+        response.status = 200
+        return response       
+    except Exception as unusedE: 
+        fullerror = sys.exc_info()
+        errorMsg = str(fullerror[1])
+        response.status = 500
+        return errorMsg     
+    
+    
+    
+    
+@route('/admin/broadcasterunsubscribe', method='POST')
+def broadcasterUnSubscribe():
+    """
+        params:
+            ownerID 
+            stimulusCallbackURL
+    """   
+    try:
+        rawRequest = request.POST.dict 
+        for rawKey in rawRequest.keys():
+            keyVal = rawKey
+        jsonPayload = json.loads(keyVal)
+        
+        try:
+            entityID = jsonPayload["entityID"]
+            entityUUID = uuid.UUID(entityID)
+        except KeyError:
+            raise Exceptions.MismatchedPOSTParametersError("Request has no valid entityID post patameter")
+        except Exception as e:
+            raise e
+        
+        try:
+            entityType = rmlEngine.api.getEntityMemeType(entityUUID)
+        except Exception as e:
+            raise Exceptions.NoSuchEntityError("ownerID parameter value %s does not exist." %entityID)
+        
+        if (entityType != "Agent.Owner") and (entityType != "Agent.Creator"):
+            raise Exceptions.TemplatePathError("entityID parameter value %s refers to an entity of type %s.  Only data owners and data creators (Agent.Owner and Agent.Creator) may subscribe to broadbasters" %(entityID, entityType))
+        
+        try:
+            callbackURL = rawRequest["CallbackURL"]
+        except KeyError:
+            raise Exceptions.MismatchedPOSTParametersError("Data Modlecule has no url.  Molecule not created")
+        except Exception as e:
+            raise e
+        
+        newUUID = addMolecule("Agent.Molecule", "data", technicalName, creatorID, ownerID, rawRequest)    
+        unusedPropertySetResults = rmlEngine.api.setEntityPropertyValue(newUUID, "CallbackURL", callbackURL)    
+        returnStr = "%s" %newUUID
+        response.body = json.dumps({"entityUUID": newUUID})
+        response.status = 200
+        return response       
+    except Exception as unusedE: 
+        fullerror = sys.exc_info()
+        errorMsg = str(fullerror[1])
+        response.status = 500
+        return errorMsg    
+    
+    
+    
+@route('/admin/broadcastercatalog', method='POST')
+def broadcasterCatalog():
+    """
+        params:
+            ownerID 
+            stimulusCallbackURL
+    """   
+    try:
+        rawRequest = request.POST.dict 
+        for rawKey in rawRequest.keys():
+            keyVal = rawKey
+        jsonPayload = json.loads(keyVal)
+        
+        try:
+            entityID = jsonPayload["entityID"]
+            entityUUID = uuid.UUID(entityID)
+        except KeyError:
+            raise Exceptions.MismatchedPOSTParametersError("Request has no valid entityID post patameter")
+        except Exception as e:
+            raise e
+        
+        try:
+            entityType = rmlEngine.api.getEntityMemeType(entityUUID)
+        except Exception as e:
+            raise Exceptions.NoSuchEntityError("ownerID parameter value %s does not exist." %entityID)
+        
+        if (entityType != "Agent.Owner") and (entityType != "Agent.Creator"):
+            raise Exceptions.TemplatePathError("entityID parameter value %s refers to an entity of type %s.  Only data owners and data creators (Agent.Owner and Agent.Creator) may subscribe to broadbasters" %(entityID, entityType))
+        
+        try:
+            callbackURL = rawRequest["CallbackURL"]
+        except KeyError:
+            raise Exceptions.MismatchedPOSTParametersError("Data Modlecule has no url.  Molecule not created")
+        except Exception as e:
+            raise e
+        
+        newUUID = addMolecule("Agent.Molecule", "data", technicalName, creatorID, ownerID, rawRequest)    
+        unusedPropertySetResults = rmlEngine.api.setEntityPropertyValue(newUUID, "CallbackURL", callbackURL)    
+        returnStr = "%s" %newUUID
+        response.body = json.dumps({"entityUUID": newUUID})
+        response.status = 200
+        return response       
+    except Exception as unusedE: 
+        fullerror = sys.exc_info()
+        errorMsg = str(fullerror[1])
+        response.status = 500
+        return errorMsg    
+
     
     
 
@@ -3123,13 +3288,31 @@ def invokeintent(moleculeID, intentID):
         return returnStr
     
     
-@route('/stimuli/<broadcasterID>', method='GET')
-def getStimulusReports(broadcasterID):
+@route('/stimuli/<ownerID>', method='GET')
+def getStimulusReports(ownerID):
     """  Collect current items in a particular broadcast queue """
     
     try:
-        if broadcasterID not in Engine.broadcasterRegistrar.broadcasterIndex:
-            errorMsg = "No such broadcast queue %s" %broadcasterID
+        try:
+            ownerUUID = uuid.UUID(ownerID)
+        except Exception as e:
+            raise e
+        
+        try:
+            ownerEntityType = rmlEngine.api.getEntityMemeType(ownerUUID)
+        except Exception as e:
+            raise Exceptions.NoSuchEntityError("ownerID parameter value %s does not exist." %ownerID)
+        
+        try:
+            ownerEntityType = rmlEngine.api.getEntityMemeType(ownerUUID)
+        except Exception as e:
+            raise Exceptions.NoSuchEntityError("ownerID parameter value %s does not exist." %ownerID)
+        
+        if ownerEntityType != "Agent.Owner":
+            raise Exceptions.TemplatePathError("ownerID parameter value %s does not refer to a valid data owner" %ownerID)
+        
+        if ownerUUID not in Engine.broadcasterRegistrar.broadcasterIndex:
+            errorMsg = "No broadcast queue assigned for data owner %s" %ownerID
             raise Exceptions.NoSuchBroadcasterError(errorMsg)
         else:
             #pop the report from myQueue and fire self.onStimulusReport()

@@ -152,10 +152,11 @@ class ServicePlugin(threading.Thread):
     override and implement execute() for specific behavior
     run() to run it.
     join() to close it'''
-    stoprequest = threading.Event()
 
     def initialize(self, graphAPI, dtParams = None, rtParams = None):
         method = self.className + '.' + os.path.splitext(os.path.basename(__file__))[0] + '.' + 'initialize'
+        
+        self.stoprequest = threading.Event()
         
         #Graph.logQ.put( [logType , logLevel.DEBUG , method , u"Design Time Parameters = %s" %(dtParams)])
         self.pluginName = rtParams['moduleName']
@@ -183,115 +184,7 @@ class ServicePlugin(threading.Thread):
 
     
 
-    
-
-
-
-class Broadcaster(ServicePlugin):
-    ''' 
-        Core Broadcaster Class
-    '''
-    className = 'DefaultBroadcaster'  #Override
-    broadcasterID = None
-    
-    def onAfterInitialize(self, adminParams = None, engineParams = None):
-        pass
-    
-    def onStimulusReport(self, stimulusReport):
-        pass
-    
-    def onBeforeShutdown(self):
-        pass
-        
-    def initialize(self, dtParams = None, rtParams = None):
-        method = os.path.splitext(os.path.basename(__file__))[0] + '.' +  self.className + '.initialize'
-        
-        try:
-            try:
-                self.broadcasterID = dtParams["broadcasterID"]
-            except KeyError:
-                errorMsg = "Unable to register broadcaster of unknown ID.  An ID parameter must be provided as the first parameter of the initialize() method, or a dictionary must be provided as the second parameter with a 'broadcasterID'.  No Id parameter given.  Dictionary present, but no such key exists.  Broadcaster can't register itself without a key"
-                Graph.logQ.put( [logType , logLevel.ERROR , method , errorMsg])
-                raise Exceptions.NoSuchBroadcasterError(errorMsg)
-            except TypeError:
-                errorMsg = "Unable to register broadcaster of unknown ID.  An ID parameter must be provided as the first parameter of the initialize() method, or a dictionary must be provided as the second parameter with a 'broadcasterID'.  No Id parameter given and no dictionary given.  Broadcaster can't register itself without a key"
-                Graph.logQ.put( [logType , logLevel.ERROR , method , errorMsg])
-                raise Exceptions.NoSuchBroadcasterError(errorMsg)
-        
-            try:
-                global broadcasterRegistrar
-                broadcasterRegistrar.registerBroadcaster(self.broadcasterID)
-
-                self._stopevent = threading.Event()
-                self._sleepperiod = 0.03
-                threading.Thread.__init__(self, name = rtParams['moduleName'])
-            except Exceptions.QueueError as qe:
-                errorMsg = "Unable to acquire queue for broadcaster %s.  Traceback = %s" %(self.broadcasterID, qe)
-                Graph.logQ.put( [logType , logLevel.ERROR , method , errorMsg])
-                raise qe
-            except Exceptions.NoSuchBroadcasterError as nsbe:
-                errorMsg = "Unable to register broadcaster %s.  Traceback = %s" %(self.broadcasterID, nsbe)
-                Graph.logQ.put( [logType , logLevel.ERROR , method , errorMsg])
-                raise nsbe
-            except Exception as e:
-                errorMsg = "Unable to start broadcaster %s.  Traceback = %s" %(self.broadcasterID, e)
-                Graph.logQ.put( [logType , logLevel.ERROR , method , errorMsg])
-                raise e
-            
-            self.onAfterInitialize(dtParams, rtParams)
-        
-        except Exceptions.NoSuchBroadcasterError as e:
-            raise e
-        except Exception as e:
-            fullerror = sys.exc_info()
-            errorID = str(fullerror[0])
-            errorMsg = str(fullerror[1])
-            responseMessage = "Error on starting broadcaster %s.  %s, %s" %(self.broadcasterID, errorID, errorMsg)
-            tb = sys.exc_info()[2]
-            raise ValueError(responseMessage).with_traceback(tb)
-         
-        
-    def run(self):
-        """
-            broadcasterRegistrar.broadcasterIndex[self.broadcasterID] is a broadcast queue registered 
-            with the Engine's broadcast registrar.   
-        """
-        method = os.path.splitext(os.path.basename(__file__))[0] + '.' +  self.className + '.run'
-        while self.isAlive():
-            try:
-                if self.broadcasterID not in broadcasterRegistrar.broadcasterIndex:
-                    errorMsg = "%s has no queue to manage.  Shutting plugin down." %self.broadcasterID
-                    Graph.logQ.put( [logType , logLevel.ERROR , method , errorMsg])
-                    self.join()
-                else:
-                    #pop the report from myQueue and fire self.onStimulusReport()
-                    stimulusReport = broadcasterRegistrar.broadcasterIndex[self.broadcasterID].get_nowait()
-                    self.onStimulusReport(stimulusReport)
-            except queue.Empty:
-                if not self._is_stopped:
-                    self._stopevent.wait(self._sleepperiod)
-                else: 
-                    self.exit()
-                
-            except Exception as e:
-                errorMsg = "Error encountered while trying to transfer stimulus report to response queue. Traceback = %e" %e
-                Graph.logQ.put( [logType , logLevel.ERROR , method , errorMsg])
-        dummyCatch = "this thread is being shut down"
-        
-
-    def join(self):
-        """
-        Stop the thread
-        """
-        method = os.path.splitext(os.path.basename(__file__))[0] + '.' + self.className + '.' + 'join'
-        shutdownMessage = "......Broadcaster %s shut down" %self.broadcasterID
-        Graph.logQ.put( [logType , logLevel.ADMIN , method , shutdownMessage])
-        self.onBeforeShutdown()
-        self._stopevent.set()
-        threading.Thread.join(self, 0.5)    
-    
-            
-            
+           
 
 
 class ActionRequest(object):
@@ -430,47 +323,16 @@ class ControllerCatalog(object):
 class BroadcasterRegistrar(object):
     className = "BroadcasterRegistrar"
     
-    broadcasterIndex = {}   
-    metamemeIndex = {}
-    memeIndex = {}
-    stimulusIndex = {}
-    registeredBroadcasters = [] 
-    defaultBroadcasters = []     
+    def __init__(self):
+        self.broadcasterIndex = {}   
+        self.metamemeIndex = {}
+        self.memeIndex = {}
+        self.stimulusIndex = {}
+        self.registeredBroadcasters = [] 
+        self.defaultBroadcasters = []     
     
-    def indexDescriptorMetamemes(self, broadcasterID, metamemeIDs):
-        for metamemeID in metamemeIDs:
-            try:
-                existingBroadcasterSet = self.metamemeIndex[metamemeID]
-                existingBroadcasterSet.add(metamemeID)
-                self.metamemeIndex[metamemeID] = existingBroadcasterSet
-                
-                #Make a recursive call to cover all extending metamemes as well
-                metamemeChildren = Graph.api.getExtendingMetamemes(metamemeID)
-                self.indexDescriptorMetamemes(broadcasterID, metamemeChildren)
-            except KeyError:
-                newBroadcasterSet = set([metamemeID])
-                self.metamemeIndex[metamemeID] = newBroadcasterSet
-            except Exception as e:
-                raise e
-                
     
-    def indexDescriptorMemes(self, broadcasterID, memeIDs):
-        for memeID in memeIDs:
-            try:
-                if memeID == "*":
-                    self.stimulusIndex["*"] = broadcasterID
-                else:
-                    existingBroadcasterSet = self.memeIndex[memeID]
-                    existingBroadcasterSet.add(broadcasterID)
-                    self.memeIndex[memeID] = existingBroadcasterSet
-            except KeyError:
-                newBroadcasterSet = set([broadcasterID])
-                self.memeIndex[memeID] = newBroadcasterSet
-            except Exception as e:
-                raise e
-            
-
-    def indexBroadcaster(self, broadcasterID):
+    def registerBroadcaster(self, broadcasterID):
         if broadcasterID is not None:
             try:
                 self.broadcasterIndex[broadcasterID] = queue.Queue()
@@ -480,87 +342,24 @@ class BroadcasterRegistrar(object):
             errorMsg = "Can't register broadcaster with value None"
             raise Exceptions.NullBroadcasterIDError(errorMsg)
         
-    def registerBroadcaster(self, broadcasterID):
+        
+        
+    def getBroadcastQueue(self, broadcasterID):
         try:
-            queuePointer = self.broadcasterIndex[broadcasterID]  
-            testQueue = queue.Queue()
-            if type(queuePointer) != type(testQueue):
-                errorMsg = "No queue defined for broadcaster %s" %broadcasterID
-                raise Exceptions.QueueError(errorMsg)
-            else:
-                self.registeredBroadcasters.append(broadcasterID)
-                return queuePointer
-        except Exceptions.QueueError as qe:
-            raise qe
+            return self.broadcasterIndex[broadcasterID] 
         except KeyError:
-            errorMsg = "No such broadcaster (%s) registered" %broadcasterID
-            raise Exceptions.NoSuchBroadcasterError(errorMsg)
-        except Exception as e:
-            raise e
-        
-        
-    def indexDescriptor(self, descriptorID):
-        method = os.path.splitext(os.path.basename(__file__))[0] + '.' +  self.className + '.indexDescriptor'
-        
-        #There is only one descriptor and the list length is 1,so use descriptors[0] for the descriptor uuid
-        try:
-            descriptorMeme = Graph.api.getEntityMemeType(descriptorID)
-            descriptorMetaMeme = Graph.api.getEntityMetaMemeType(descriptorID)
-        except Exception as e:
-            raise e           
-        
-        broadcasterList = set([])
-        for memeKey in self.memeIndex:
-            if memeKey == descriptorMeme:
-                broadcasterListByMeme = self.memeIndex[memeKey]
-                broadcasterList.update(broadcasterListByMeme)
-        for metaMemeKey in self.metamemeIndex:
-            if metaMemeKey == descriptorMetaMeme:
-                broadcasterListByMetaMeme = self.metamemeIndex[metaMemeKey]
-                broadcasterList.update(broadcasterListByMetaMeme)
-        self.stimulusIndex[descriptorID] = broadcasterList
-        Graph.logQ.put( [logType , logLevel.INFO , method , "Descriptor %s registered with broadcasters %s" %(descriptorMeme, broadcasterList)])
-        
-        
-        
-    def getBroadcastQueue(self, stimulusUUID):
-        try:
-            broadcasterIDList = self.stimulusIndex[stimulusUUID] 
             try:
-                defaultBroadcasterID = self.stimulusIndex["*"] 
-                queueList = [defaultBroadcasterID]
-            except:
-                queueList = []
-            try:
-                for broadcasterID in broadcasterIDList:
-                    if broadcasterID in self.registeredBroadcasters:
-                        #Return the ID of the broadcast queue.  This way we can directly access it in the original dict, without scope issues
-                        queueList.append(broadcasterID)  
-                    else:
-                        errorMsg = "Broadcaster %s not registered.  Please check configuration XML" %broadcasterID
-                        raise Exceptions.NoSuchBroadcasterError(broadcasterID)
-            except KeyError:
-                errorMsg = "No queue defined for broadcaster %s" %broadcasterID
-                raise Exceptions.QueueError(errorMsg)
-            except Exceptions.NoSuchBroadcasterError as e:
-                raise Exceptions.NoSuchBroadcasterError(e)
-            return queueList
-        except KeyError:
-            keyList = list(self.stimulusIndex.keys())
-            memeIDList = []
-            badMemeID = None
-            try:
-                badMemeID = Graph.api.getEntityMemeType(stimulusUUID)
-                for keyID in keyList:
-                    memeID = Graph.api.getEntityMemeType(keyID)
-                    memeIDList.append(memeID)
-            except: pass
-            errorMsg = "Descriptor %s No among registered descriptors in broadcast registrar.   Registered Descriptors = %s" %(badMemeID, memeIDList)
+                badMemeType = Graph.api.getEntityMemeType(broadcasterID)
+                badMMType = Graph.api.getEntityMetaMemeType(broadcasterID)
+                if badMMType == "Agent.BroadcasterMM":
+                    errorMsg = "Inconsistent Broadcaster Configuration! %s registered in the graph as a valid broadcaster, but the corresponding queue is missing.  " %(badMemeType, badMMType)
+                else:
+                    errorMsg = "Invalid broadcast routing! Stimulus Engine attemting to send a resolved descriptor to broadcaster %s, but it is not a registered broadcaster.  It is a %s" %(badMemeType, badMMType)
+                raise Exceptions.NoSuchBroadcasterError(errorMsg)
+            except Exceptions as e: 
+                raise e
             raise Exceptions.NullBroadcasterIDError(errorMsg)
-        except Exceptions.NoSuchBroadcasterError as e:
-            raise Exceptions.NoSuchBroadcasterError(e)
-        except Exceptions.QueueError as e:
-            raise Exceptions.QueueError(e)    
+  
     
 
 
@@ -776,14 +575,13 @@ stimulusAPI = StimulusAPI()
 ###################
 
 class ActionEngine(ServicePlugin):
-    className = "Plugin"
 
     def initialize(self, dummiAPIParam, dtParams = None, rtParams = None):
         # This method overrides the initialize from the parent class.
         method = os.path.splitext(os.path.basename(__file__))[0] + '.' + self.className + '.' + 'initialize'
         #Graph.logQ.put( [logType , logLevel.DEBUG , method , "entering"])
         try:
-            
+            self.className = "ActionEngine"
             self.aQ = rtParams['aQ']
             self.actionIndex = {}
             self.indexer = ActionIndexer(self.actionIndex)
@@ -3395,6 +3193,9 @@ class Engine(object):
                             "getStimulusScope" : ["Agent", "getStimulusScope"],
                             "getAgentScope" : ["Agent", "getAgentScope"]}
         
+        self.broadcasters = {"JSONBroadcaster" : {"description" : "Default broadcaster.  No Callback.  This broadcaster is polled, by calling /stimuli/<ownerID> and returns all resolved descriptors earmarked for the owner, since the last poll.  The raw, resolved descriptor is returned."},
+                             "Callback_JSONBroadcaster" : {"description" : "The standard callback broadcaster.  Pushes the raw, resolved descriptor to the owner stimulus callback URL."}}
+        
         #A hook for adding loosely coupled plugins
         self.plugins = {}
 
@@ -3503,37 +3304,6 @@ class Engine(object):
                 Graph.logQ.put( [logType , logLevel.ERROR , method , "problem syndicating file in repository %s.  Traceback = %s" %(packagePath, e)])
  
 
-            
-        #Before starting any plugins, initialize the broadcaster registrar
-        #queues
-        for broadcasterID in self.broadcasters.keys():
-            broadcasterDeclaration = self.broadcasters[broadcasterID]
-            broadcasterRegistrar.indexBroadcaster(broadcasterID)
-            memeIDs = []
-            metamemeIDs = []           
-            try:
-                memeIDs = broadcasterDeclaration['memes']
-            except KeyError: pass
-            except Exception as e:
-                raise e
-            
-            try:
-                metamemeIDs = broadcasterDeclaration['metaMemes']
-            except KeyError: pass
-            except Exception as e:
-                raise e
-            
-            try:
-                broadcasterRegistrar.indexDescriptorMemes(broadcasterID, memeIDs)
-                broadcasterRegistrar.indexDescriptorMetamemes(broadcasterID, metamemeIDs)
-                broadcasterRegistrar.registerBroadcaster(broadcasterID)
-            except Exceptions.NullBroadcasterIDError as e:
-                Graph.logQ.put( [logType , logLevel.ERROR , method , "Can't index broadcaster %s.  Traceback = %s" %(broadcasterID, e)])
-            except Exception as e:
-                Graph.logQ.put( [logType , logLevel.ERROR , method , "Problem indexing broadcaster %s and descriptor ownership %s.  Traceback = %s" %(broadcasterID, memeIDs, e)])
-
-
-
         # Monkey Patching Alert!  We will decorate the Graphyne.Graph.Scriptacade class with additional script commands before initializing it
         #MasterScriptFunctions
         # /Monkey Patching.  We can now start the Graph.  :)
@@ -3600,13 +3370,34 @@ class Engine(object):
         for desriptorID in desriptors:
             stimulusIndexerQ.put(desriptorID)
         Graph.logQ.put( [logType , logLevel.INFO , method ,"Finished initial loading of Action and Stimulus Indexers"])
-         
+        
         
         self.serverState = self.startupState.STARTING_SERVICES
         #Now we can start the service plugins
         Graph.logQ.put( [logType , logLevel.ADMIN , method , "starting engine services"])
         self.actionEngine = ActionEngine()
         self.stimulusEngine = StimulusEngine()
+        
+        #Broadcasters
+        for broadcasterName in self.broadcasters.keys():
+            try:
+                broadcasterDefinition = self.broadcasters[broadcasterName]
+                entityCreationReport = Graph.api.sourceMemeCreate(broadcasterName, "Broadcaster", "Agent.BroadcasterMM")
+                unusedReturn = Graph.api.sourceMemeSetSingleton(entityCreationReport["memeID"], True)
+                try:
+                    description = broadcasterDefinition["description"]
+                    unusedReturn = Graph.api.sourceMemePropertySet(entityCreationReport["memeID"], "description", description)
+                except Exception as e:
+                    errprMessage = "Broadcaster definition %s has no description" %broadcasterName
+                    Graph.logQ.put( [logType , logLevel.INFO , method , errprMessage])
+                    unusedReturn = Graph.api.sourceMemePropertySet(entityCreationReport["memeID"], "description", "")
+                broadcasterEntityID = Graph.api.createEntityFromMeme(entityCreationReport["memeID"])
+                broadcasterRegistrar.registerBroadcaster(entityCreationReport["memeID"], broadcasterEntityID)
+            except Exception as e:
+                fullerror = sys.exc_info()
+                errorID = str(fullerror[0])
+                errorMsg = str(fullerror[1])
+                Graph.logQ.put( [logType , logLevel.ERROR , method , "Problem indexing broadcaster %s.  Error ID = %s.  Traceback = %s" %(broadcasterName, errorID, errorMsg)])
         
         self.actionEngine.initialize(None, {'heatbeatTick' : 1}, self.rtParams)
         self.actionEngine.start()
@@ -3777,10 +3568,7 @@ linkTypes = LinkType()
 
 
 broadcasterRegistrar = BroadcasterRegistrar()
-broadcasterRegistrar.indexBroadcaster('hello')
 
-helloQ = broadcasterRegistrar.broadcasterIndex['hello']
-helloQ.put("world")
 
 
 

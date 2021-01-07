@@ -21,8 +21,25 @@
 		</Contributor>		
 	</Metadata>
 	
+	<ListOfPropertyRestriction>
+		<PropertyRestriction id="BroadcasterType">
+			<RestrictionValueString>Reactive</RestrictionValueString>
+			<RestrictionValueString>Proactive</RestrictionValueString>
+		</PropertyRestriction>
+	</ListOfPropertyRestriction>
+	
 	<ListOfMetaMeme>
 		<!-- Stimulus -->
+		<MetaMeme id="BroadcastTag" singleton="true">
+			<MetaMemeProperty name="Description" type="string"/>
+		</MetaMeme>
+		<MetaMeme id="Broadcaster">
+			<MemberMetaMeme reference="BroadcastTag" min="1"/>
+			<MetaMemeProperty name="BroadcasterType" type="string" restriction="BroadcasterType" constrained="true"/>
+			<MetaMemeProperty name="Name" type="string"/>
+			<MetaMemeProperty name="Description" type="string"/>
+			<MetaMemeProperty name="IsServiced" type="boolean"/>
+		</MetaMeme>
 		<MetaMeme id="Descriptor" switch="true" singleton="true">
 			<MemberMetaMeme reference="Graphyne.DNA.StateEventScript" min="0" max="2"/>
 			<MemberMetaMeme reference="InternationalizedDescriptor" min="0" max="1"/>
@@ -44,6 +61,7 @@
 			<MetaMemeExtensions>
 				<MetaMemeID>Graphyne.DNA.Thing</MetaMemeID>
 			</MetaMemeExtensions>
+			<MemberMetaMeme reference="BroadcastTag" min="1"/>
 			<MemberMetaMeme reference="StimulusScope" min="1" max="1"/>
 			<MemberMetaMeme reference="Descriptor" min="1" max="1"/>
 			<MemberMetaMeme reference="SuccessorStimulus" min="0" max="1"/>			
@@ -52,6 +70,7 @@
 			<MetaMemeExtensions>
 				<MetaMemeID>Graphyne.DNA.Thing</MetaMemeID>
 			</MetaMemeExtensions>
+			<MemberMetaMeme reference="BroadcastTag" min="1"/>
 			<MemberMetaMeme reference="StimulusScope" min="1" max="1"/>
 			<MemberMetaMeme reference="Descriptor" min="1" max="1"/>
 			<MemberMetaMeme reference="Anchor" min="1"/>
@@ -119,6 +138,27 @@
 	</ListOfMetaMeme>
 	
 	<ListOfMeme>
+	
+		<!-- Default Broadcasters -->
+		<Meme id="BroadcastTagJSON" metameme="BroadcastTag" singleton="true">
+			<MemeProperty name="Description" value="A standard broadcaster tag for descriptors that wish to deliver their content in a JSON format, such as when the descriptor wants to return a more complex object.  It does not specificy the format of the JSON.  This is left to the individual descriptor implementation"/>
+		</Meme>
+		<Meme id="BroadcastTagMessage" metameme="BroadcastTag" singleton="true">
+			<MemeProperty name="Description" value="A standard broadcaster tag for unstructured text."/>
+		</Meme>
+		
+		<Meme id="BroadcasterMessage" metameme="Broadcaster">
+			<MemeProperty name="BroadcasterType" value="Reactive"/>
+			<MetaMemeProperty name="Name" type="BroadcasterMessageDefault"/>
+			<MetaMemeProperty name="Description" type="Default Broadcaster for BroadcastTagMessage"/>
+			
+		</Meme>
+		<Meme id="BroadcasterJSON" metameme="Broadcaster">
+			<MemeProperty name="BroadcasterType" value="Reactive"/>
+			<MetaMemeProperty name="Name" type="BroadcasterJSONDefault"/>
+			<MetaMemeProperty name="Description" type="Default Broadcaster for BroadcastTagJSON"/>
+		</Meme>
+		
 		<!--  Text State Event Scripts -->
 		<Meme id="TextDescriptorInitScript" metameme="Graphyne.DNA.Script" singleton="true">
 			<MemeProperty name="Script" value="Stimulus.InitText"/>

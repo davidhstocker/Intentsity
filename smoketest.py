@@ -3758,7 +3758,7 @@ def smokeTestSet(persistence, lLevel, css, profileName, persistenceArg = None, p
                             'Module' : 'Broadcasters.RegressionTestBroadcaster',
                             'PluginParemeters': {'heatbeatTick' : 1, 'broadcasterID' : 'test', 'port' : 8081}
                             }
-    """
+
     rmlEngine.broadcasters['test'] = {'memes' : [ 'TestPackageStimulusEngine.SimpleStimuli.Descriptor_Trailer',
                                         'TestPackageStimulusEngine.SimpleStimuli.Descriptor_HelloPage',
                                         'TestPackageStimulusEngine.SimpleStimuli.ADescriptor_HelloPage',
@@ -3767,6 +3767,7 @@ def smokeTestSet(persistence, lLevel, css, profileName, persistenceArg = None, p
                                         'TestPackageStimulusEngine.SimpleStimuli.Descriptor_MultiPage',
                                         'TestPackageStimulusEngine.SimpleStimuli.Descriptor_AnotherPage',
                                         'TestPackageStimulusEngine.SimpleStimuli.ADescriptor_AnotherPage']}
+    """
     
     #Set up the persistence of rmlEngine.  It defaults to no persistence
     rmlEngine.setPersistence(persistenceArg, persistenceType)

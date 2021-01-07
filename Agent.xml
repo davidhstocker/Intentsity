@@ -33,7 +33,6 @@
 			<RestrictionValueString>IntKeyValuePairList</RestrictionValueString>
 		</PropertyRestriction>
 	</ListOfPropertyRestriction>	
-	s
 	<ListOfMetaMeme>	
 	
 		<MetaMeme id="Agent">
@@ -69,6 +68,7 @@
 			</MetaMemeExtensions>
 			<MemberMetaMeme reference="Graphyne.Condition.Condition" min="1" max="1"/>
 		</MetaMeme>
+
 		
 		<!-- Landmark -->
 		
@@ -121,6 +121,11 @@
 			</MetaMemeExtensions>
 			<MetaMemeProperty name="description" type="string"/>
 		</MetaMeme>
+		
+		<MetaMeme id="BroadcasterMM" singleton="true">
+			<MetaMemeProperty name="description" type="string"/>
+		</MetaMeme>	
+		
 </ListOfMetaMeme>
 
 	<ListOfMeme>
@@ -141,7 +146,13 @@
 	    </Meme>
 	    
 	    
-		<Meme id="Controller" metameme="ControllerMM">
+		<Meme id="Creator" metameme="ControllerMM">
+	    	<MemberMeme occurrence="1" memberID="ControllerInitSES"/>
+	    	<MemberMeme occurrence="1" memberID="DefaultScope"/>
+	    	<MemberMeme occurrence="1" memberID="DefaultView"/>
+	    </Meme>
+	    
+		<Meme id="Owner" metameme="ControllerMM">
 	    	<MemberMeme occurrence="1" memberID="ControllerInitSES"/>
 	    	<MemberMeme occurrence="1" memberID="DefaultScope"/>
 	    	<MemberMeme occurrence="1" memberID="DefaultView"/>
@@ -156,12 +167,12 @@
 		
 		<Meme id="ServiceMolecule" metameme="Agent">
 			<MemberMeme occurrence="1" memberID="IntentDeclarationSES"/>
-			<MemberMeme occurrence="1" memberID="Controller"/>
+			<MemberMeme occurrence="1" memberID="DefaultController"/>
 		</Meme>	
 		
 		<Meme id="IntentMolecule" metameme="Agent">
 			<MemberMeme occurrence="1" memberID="IntentDeclarationSES"/>
-			<MemberMeme occurrence="1" memberID="Controller"/>
+			<MemberMeme occurrence="1" memberID="DefaultController"/>
 		</Meme>	
 		
 		<Meme id="MoleculeNode" metameme="MoleculeNodeMM">
