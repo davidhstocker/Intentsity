@@ -154,7 +154,7 @@ class ServicePlugin(threading.Thread):
     join() to close it'''
 
     def initialize(self, graphAPI, dtParams = None, rtParams = None):
-        method = self.className + '.' + os.path.splitext(os.path.basename(__file__))[0] + '.' + 'initialize'
+        method = os.path.splitext(os.path.basename(__file__))[0] + '.' + 'initialize'
         
         self.stoprequest = threading.Event()
         

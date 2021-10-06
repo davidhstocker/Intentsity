@@ -13,8 +13,8 @@ import threading
 import queue
 import uuid
 from os.path import expanduser
-from Intentsity import Engine
-from Intentsity import Exceptions
+from . import Engine
+from . import Exceptions
 import argparse
         
 basePort = 8080
@@ -162,11 +162,11 @@ class EngineStarter(threading.Thread):
                     rmlEngine.startupState.FAILED_TO_START
                     engineStatus.setAlert(alertMessage)
             elif (engineStatus.serverOn == True) and ((engineStatus.busy == True)):
-                engineStartQueue.push([202, "Command ignored.  Server currently shutting down"])
+                engineStartQueue.put([202, "Command ignored.  Server currently shutting down"])
             elif engineStatus.serverOn == False:
-                engineStartQueue.push([202, "Command ignored.  Server in busy state"])
+                engineStartQueue.put([202, "Command ignored.  Server in busy state"])
             else:
-                engineStartQueue.push([202, "Command ignored.  Server already in startup"]) 
+                engineStartQueue.put([202, "Command ignored.  Server already in startup"]) 
         except Exception as unusedE:
             engineStatus.busyOff()
             fullerror = sys.exc_info()
@@ -1089,10 +1089,19 @@ def postAction():
         response.status = 400
         return response       
     except Exception as unusedE: 
+
+        #When this exception happens, the actionID variable won't be in scope, 
+        #  But we can expect that actionID is available, or a MissingActionError would have been thrown.
+        rawRequest = request.POST.dict
+        for rawKey in rawRequest.keys():
+            keyVal = rawKey
+        jsonPayload = json.loads(keyVal)
+        actionID = jsonPayload["actionID"]
+
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        response.body = "Failed to post action %s.  %s, %s" %(errorID, errorMsg)
+        response.body = "Failed to post action %s.  %s, %s" %(actionID, errorID, errorMsg)
         response.status = 500
         return response
 
@@ -1177,10 +1186,19 @@ def postStimulus():
         response.status = 400
         return response       
     except Exception as unusedE: 
+
+        #When this exception happens, the actionID variable won't be in scope, 
+        #  But we can expect that actionID is available, or a MissingActionError would have been thrown.
+        rawRequest = request.POST.dict
+        for rawKey in rawRequest.keys():
+            keyVal = rawKey
+        jsonPayload = json.loads(keyVal)
+        actionID = jsonPayload["actionID"]
+
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        response.body = "Failed to post action %s.  %s, %s" %(errorID, errorMsg)
+        response.body = "Failed to post action %s.  %s, %s" %(actionID, errorID, errorMsg)
         response.status = 500
         return response
     
@@ -1264,10 +1282,19 @@ def collectMessages():
         response.status = 400
         return response       
     except Exception as unusedE: 
+
+        #When this exception happens, the actionID variable won't be in scope, 
+        #  But we can expect that actionID is available, or a MissingActionError would have been thrown.
+        rawRequest = request.POST.dict
+        for rawKey in rawRequest.keys():
+            keyVal = rawKey
+        jsonPayload = json.loads(keyVal)
+        actionID = jsonPayload["actionID"]
+
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        response.body = "Failed to post action %s.  %s, %s" %(errorID, errorMsg)
+        response.body = "Failed to post action %s.  %s, %s" %(actionID, errorID, errorMsg)
         response.status = 500
         return response
     

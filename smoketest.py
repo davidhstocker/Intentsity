@@ -20,10 +20,10 @@ from xml.dom import minidom
 from time import ctime
 import subprocess
 
-from Intentsity import Engine
+import Engine
 import Graphyne.Graph as Graph
 from Graphyne import Fileutils
-from Intentsity import Exceptions
+import Exceptions
 
 from urllib import parse
 from urllib.parse import urlencode
