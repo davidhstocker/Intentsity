@@ -141,7 +141,7 @@ def broadcast():
                 pass
             elif (dbSetting == 'sqlite') or (dbSetting == 'mssql') or (dbSetting == 'hana'):
                 persistenceType = dbSetting
-                print("\n  -- using persistence type %s" %dbSetting)
+                print(f"\n  -- using persistence type {dbSetting}")
             else:
                 responseMessage = "Invalid persistence type %s!  Permitted valies of --dbtype are 'none', 'sqlite', 'mssql' and 'hana'!  Defaulting to 'none'" %dbSetting
                 print(responseMessage)
@@ -168,7 +168,7 @@ def broadcast():
                     dbConnectionString = 'memory'
                     print("  -- Using sqlite persistence with connection = :memory:")
                 else:
-                    errorMsg = "  -- Persistence type %s requires a valid database connection.  Please provide a dbConnectionString argument in the POST body!" %persistenceType
+                    errorMsg = f"  -- Persistence type {persistenceType} requires a valid database connection.  Please provide a dbConnectionString argument in the POST body!"
                     print(errorMsg)
                     raise ValueError(errorMsg)
             elif dbConStr == 'memory':
@@ -179,20 +179,20 @@ def broadcast():
                     dbConnectionString = 'memory'
                     print("  -- Using sqlite persistence with connection = :memory:")
                 else:
-                    errorMsg = "  -- Persistence type %s requires a valid database connection.  Please provide a dbConnectionString argument in the POST body!" %persistenceType
+                    errorMsg = f"  -- Persistence type {persistenceType} requires a valid database connection.  Please provide a dbConnectionString argument in the POST body!"
                     print(errorMsg)
                     raise ValueError(errorMsg)
             else:
                 dbConnectionString = dbConStr
                 if persistenceType == 'sqlite':
                     if dbConnectionString.endswith(".sqlite"):
-                        print("  -- Using sqlite persistence with file %s" %dbConnectionString)
+                        print(f"  -- Using sqlite persistence with file {dbConnectionString}")
                     else:
-                        errorMsg = "  -- Using sqlite persistence type with invalid filename %s parameter in dbConnectionString argument in the POST body.  It must end with the .sqlite extension" %dbConnectionString
+                        errorMsg = f"  -- Using sqlite persistence type with invalid filename {dbConnectionString} parameter in dbConnectionString argument in the POST body.  It must end with the .sqlite extension"
                         print(errorMsg)
                         raise ValueError(errorMsg)
                 else:
-                    print("  -- Using persistence type %s with connection = %s" %(persistenceType, dbConnectionString))
+                    print(f"  -- Using persistence type {persistenceType} with connection = {dbConnectionString}")
         except Exception as unusedE:
             fullerror = sys.exc_info()
             errorID = str(fullerror[0])
@@ -249,7 +249,7 @@ def broadcast():
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        returnStr = "Intentsity failed to start:  %s, %s" %(errorID, errorMsg)
+        returnStr = f"Intentsity failed to start:  {errorID}, {errorMsg}"
         response.status = 500
         response.body = json.dumps({"status": returnStr})
         return response
@@ -257,7 +257,7 @@ def broadcast():
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        returnStr = "Intentsity failed to start:  %s, %s" %(errorID, errorMsg)
+        returnStr = f"Intentsity failed to start:  {errorID}, {errorMsg}"
         response.status = 500
         response.body = json.dumps({"status": returnStr})
         return response

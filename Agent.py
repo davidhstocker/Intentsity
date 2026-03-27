@@ -60,5 +60,5 @@ class InitLandmark(Graphyne.Scripting.StateEventScript):
             try:
                 landmarkID = Graph.api.getEntityMemeType(landmarkEntityUUID)
             except: pass
-            errorMsg = "Encountered problem trying to run initialization script for landmark %s of type %s.  Traceback = %s" %(landmarkEntityUUID, landmarkID, e)
+            errorMsg = f"Encountered problem trying to run initialization script for landmark {landmarkEntityUUID} of type {landmarkID}.  Traceback = {e}"
             raise TiogaContentExceptions.ScriptError(errorMsg)     

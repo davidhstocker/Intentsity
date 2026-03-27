@@ -124,7 +124,7 @@ class EngineStatus(object):
 rmlEngine = Engine.Engine()
 engineStatus = EngineStatus()
 engineStartQueue = queue.Queue()
-ationInsertionTypes = Engine.ActionInsertionType()
+actionInsertionTypes = Engine.ActionInsertionType
 
 class EngineStarter(threading.Thread):
     '''
@@ -158,7 +158,7 @@ class EngineStarter(threading.Thread):
                     fullerror = sys.exc_info()
                     errorID = str(fullerror[0])
                     errorMsg = str(fullerror[1])
-                    alertMessage = "%s, %s" %(errorID, errorMsg)
+                    alertMessage = f"{errorID}, {errorMsg}"
                     rmlEngine.startupState.FAILED_TO_START
                     engineStatus.setAlert(alertMessage)
             elif (engineStatus.serverOn == True) and ((engineStatus.busy == True)):
@@ -172,7 +172,7 @@ class EngineStarter(threading.Thread):
             fullerror = sys.exc_info()
             errorID = str(fullerror[0])
             errorMsg = str(fullerror[1])
-            alertMessage = "%s, %s" %(errorID, errorMsg)
+            alertMessage = f"{errorID}, {errorMsg}"
             engineStartQueue.push([500, alertMessage])
         
 
@@ -236,7 +236,7 @@ def verifyURLDefinitions(rawRequest):
                     returnParameterTypes = rawRequest['returnParameterTypes']
                     for returnParameterType in returnParameterTypes:
                         if returnParameterType not in validTypes:
-                            errorMsg = "%s not one of valid returnParameterTypes values %s" %(returnParameterType, validTypes)
+                            errorMsg = f"{returnParameterType} not one of valid returnParameterTypes values {validTypes}"
                             raise Exceptions.MismatchedPOSTParameterDeclarationError(errorMsg)
                 except Exceptions.MismatchedPOSTParameterDeclarationError as e:
                     raise e
@@ -263,7 +263,7 @@ def verifyURLDefinitions(rawRequest):
                 lpd = len(returnParameterDescriptions)
                 if (lp != lpt) or (lp != lpd):
                     errorMsg = "Mismatched rest Parameter Declaration Error:  If declaring a REST endpoint with a return interface, then the lists parameters, their types and descriptions must match."
-                    errorMsg = "%s postParameters length = %s, postParameterTypes length = %s, , postParameterDescriptions length = %s "  %(errorMsg, lp, lpt, lpd)
+                    errorMsg = f"{errorMsg} postParameters length = {lp}, postParameterTypes length = {lpt}, , postParameterDescriptions length = {lpd} "
                     raise Exceptions.MismatchedPOSTParameterDeclarationError()
                 else:
                     rReturnParameters = {"parameters" : returnParameters, "types" : returnParameterTypes, "descriptions" : returnParameterDescriptions}
@@ -279,7 +279,7 @@ def verifyURLDefinitions(rawRequest):
                     postParameterTypes = rawRequest['postParameterTypes']
                     for postParameterType in postParameterTypes:
                         if postParameterType not in validTypes:
-                            errorMsg = "%s not one of valid postParameterTypes values %s" %(postParameterType, validTypes)
+                            errorMsg = f"{postParameterType} not one of valid postParameterTypes values {validTypes}"
                             raise Exceptions.MismatchedPOSTParameterDeclarationError(errorMsg)
                 except Exceptions.MismatchedPOSTParameterDeclarationError as e:
                     raise e
@@ -306,7 +306,7 @@ def verifyURLDefinitions(rawRequest):
                 lpd = len(postParameterDescriptions)
                 if (lp != lpt) or (lp != lpd):
                     errorMsg = "Mismatched POST Parameter Declaration Error:  If declaring a REST endpoint with a POST handler, then the lists parameters, their types and descriptions must match."
-                    errorMsg = "%s postParameters length = %s, postParameterTypes length = %s, , postParameterDescriptions length = %s "  %(errorMsg, lp, lpt, lpd)
+                    errorMsg = f"{errorMsg} postParameters length = {lp}, postParameterTypes length = {lpt}, , postParameterDescriptions length = {lpd} "
                     raise Exceptions.MismatchedPOSTParameterDeclarationError()
                 else:
                     rPostParameters = {"parameters" : postParameters, "types" : postParameterTypes, "descriptions" : postParameterDescriptions}
@@ -339,7 +339,7 @@ def verifyURLDefinitions(rawRequest):
                 lpd = len(handlerParameterDescriptions)
                 if lp != lpd:
                     errorMsg = "Mismatched rest Parameter Declaration Error:  If declaring a REST endpoint with a return interface, then the lists parameters, their types and descriptions must match."
-                    errorMsg = "%s handlerParameters length = %s, handlerParameterDescriptions length = %s "  %(errorMsg, lp, lpd)
+                    errorMsg = f"{errorMsg} handlerParameters length = {lp}, handlerParameterDescriptions length = {lpd} "
                     raise Exceptions.MismatchedPOSTParameterDeclarationError()
                 else:
                     rHandlerParameters = {"parameters" : handlerParameters, "descriptions" : handlerParameterDescriptions}
@@ -354,19 +354,19 @@ def verifyURLDefinitions(rawRequest):
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        returnStr = "Incomplete callback URL parameter definition.  %s" %(errorMsg)
+        returnStr = f"Incomplete callback URL parameter definition.  {errorMsg}"
         raise Exception(returnStr)
     except Exceptions.MismatchedPOSTParameterDeclarationError as unusedE:
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        returnStr = "Inconsistent callback URL parameter definition.  %s" %(errorMsg)
+        returnStr = f"Inconsistent callback URL parameter definition.  {errorMsg}"
         raise Exception(returnStr)        
     except Exception as unusedE: 
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        returnStr = "Problematic  URL parameter definition.  %s, %s" %(errorID, errorMsg)
+        returnStr = f"Problematic  URL parameter definition.  {errorID}, {errorMsg}"
         raise Exception(returnStr)
 
 
@@ -382,7 +382,7 @@ def setURLDefinitions(memePath, rHandlerParameters, rReturnParameters, rPostPara
         #If we are going to ask for a URL callback, then let's be consistent about its type
         validTypes = [ "urlPOST", "urlGET"]
         if urlType not in validTypes:
-            errorMsg = "%s not one of valid types %s" %(urlType, validTypes)
+            errorMsg = f"{urlType} not one of valid types {validTypes}"
             raise ValueError(errorMsg)
         unusedReturnResults = rmlEngine.api.setEntityPropertyValue(entityUUID, "URLType", urlType)
         '''
@@ -447,7 +447,7 @@ def setURLDefinitions(memePath, rHandlerParameters, rReturnParameters, rPostPara
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        returnStr = "Error while populating URL parameter definitions.  %s, %s" %(errorID, errorMsg)
+        returnStr = f"Error while populating URL parameter definitions.  {errorID}, {errorMsg}"
         raise Exception(returnStr)
     
 
@@ -479,25 +479,25 @@ def addMolecule(memeType, moleculeType, technicalName, creatorID, ownerID, rawRe
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        returnStr = "Failed to create %s molecule %s for controller %s.  Incomplete callback URL parameter definition.  %s" %(moleculeType, technicalName, ownerID, errorMsg)
+        returnStr = f"Failed to create {moleculeType} molecule {technicalName} for controller {ownerID}.  Incomplete callback URL parameter definition.  {errorMsg}"
         raise Exception(returnStr)
     except Exceptions.MismatchedPOSTParameterDeclarationError as unusedE:
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        returnStr = "Failed to create %s molecule %s for controller %s.  Inconsistent callback URL parameter definition.  %s" %(moleculeType, technicalName, ownerID, errorMsg)
+        returnStr = f"Failed to create {moleculeType} molecule {technicalName} for controller {ownerID}.  Inconsistent callback URL parameter definition.  {errorMsg}"
         raise Exception(returnStr) 
     except Exceptions.InvalidControllerError as unusedE:
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        returnStr = "Failed to create %s molecule %s.  Invalid controller %s" %(moleculeType, technicalName, ownerID)
+        returnStr = f"Failed to create {moleculeType} molecule {technicalName}.  Invalid controller {ownerID}"
         raise Exception(returnStr)        
     except Exception as unusedE: 
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        returnStr = "Failed to create %s molecule %s for controller %s.  Inconsistent callback URL parameter definition.  %s, %s" %(moleculeType, technicalName, ownerID, errorID, errorMsg)
+        returnStr = f"Failed to create {moleculeType} molecule {technicalName} for controller {ownerID}.  Inconsistent callback URL parameter definition.  {errorID}, {errorMsg}"
         raise Exception(returnStr)
 
 
@@ -609,7 +609,7 @@ def start():
                 pass
             elif (dbSetting == 'sqlite') or (dbSetting == 'mssql') or (dbSetting == 'hana'):
                 persistenceType = dbSetting
-                print("\n  -- using persistence type %s" %dbSetting)
+                print(f"\n  -- using persistence type {dbSetting}")
             else:
                 responseMessage = "Invalid persistence type %s!  Permitted valies of --dbtype are 'none', 'sqlite', 'mssql' and 'hana'!  Defaulting to 'none'" %dbSetting
                 print(responseMessage)
@@ -636,7 +636,7 @@ def start():
                     dbConnectionString = 'memory'
                     print("  -- Using sqlite persistence with connection = :memory:")
                 else:
-                    errorMsg = "  -- Persistence type %s requires a valid database connection.  Please provide a dbConnectionString argument in the POST body!" %persistenceType
+                    errorMsg = f"  -- Persistence type {persistenceType} requires a valid database connection.  Please provide a dbConnectionString argument in the POST body!"
                     print(errorMsg)
                     raise ValueError(errorMsg)
             elif dbConStr == 'memory':
@@ -647,20 +647,20 @@ def start():
                     dbConnectionString = 'memory'
                     print("  -- Using sqlite persistence with connection = :memory:")
                 else:
-                    errorMsg = "  -- Persistence type %s requires a valid database connection.  Please provide a dbConnectionString argument in the POST body!" %persistenceType
+                    errorMsg = f"  -- Persistence type {persistenceType} requires a valid database connection.  Please provide a dbConnectionString argument in the POST body!"
                     print(errorMsg)
                     raise ValueError(errorMsg)
             else:
                 dbConnectionString = dbConStr
                 if persistenceType == 'sqlite':
                     if dbConnectionString.endswith(".sqlite"):
-                        print("  -- Using sqlite persistence with file %s" %dbConnectionString)
+                        print(f"  -- Using sqlite persistence with file {dbConnectionString}")
                     else:
-                        errorMsg = "  -- Using sqlite persistence type with invalid filename %s parameter in dbConnectionString argument in the POST body.  It must end with the .sqlite extension" %dbConnectionString
+                        errorMsg = f"  -- Using sqlite persistence type with invalid filename {dbConnectionString} parameter in dbConnectionString argument in the POST body.  It must end with the .sqlite extension"
                         print(errorMsg)
                         raise ValueError(errorMsg)
                 else:
-                    print("  -- Using persistence type %s with connection = %s" %(persistenceType, dbConnectionString))
+                    print(f"  -- Using persistence type {persistenceType} with connection = {dbConnectionString}")
         except Exception as unusedE:
             fullerror = sys.exc_info()
             errorID = str(fullerror[0])
@@ -717,7 +717,7 @@ def start():
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        returnStr = "Intentsity failed to start due to malformed json payload in POST body:  %s, %s." %(errorID, errorMsg)
+        returnStr = f"Intentsity failed to start due to malformed json payload in POST body:  {errorID}, {errorMsg}."
         response.status = 500
         response.body = json.dumps({"status": returnStr})
         return response
@@ -725,7 +725,7 @@ def start():
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        returnStr = "Intentsity failed to start:  %s, %s" %(errorID, errorMsg)
+        returnStr = f"Intentsity failed to start:  {errorID}, {errorMsg}"
         response.status = 500
         response.body = json.dumps({"status": returnStr})
         return response
@@ -733,7 +733,7 @@ def start():
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        returnStr = "Intentsity failed to start:  %s, %s" %(errorID, errorMsg)
+        returnStr = f"Intentsity failed to start:  {errorID}, {errorMsg}"
         response.status = 500
         response.body = json.dumps({"status": returnStr})
         return response
@@ -774,7 +774,7 @@ def stopServer():
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        returnStr = "Failed to stop Intentsity engine.  %s, %s" %(errorID, errorMsg)
+        returnStr = f"Failed to stop Intentsity engine.  {errorID}, {errorMsg}"
         response.status = 500
         response.body = json.dumps({"status": returnStr})
         return response
@@ -821,7 +821,7 @@ def forceStopServer():
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        returnStr = "Failed to stop Intentsity engine.  %s, %s" %(errorID, errorMsg)
+        returnStr = f"Failed to stop Intentsity engine.  {errorID}, {errorMsg}"
         response.status = 500
         response.body = json.dumps({"status": returnStr})
         return response
@@ -864,7 +864,7 @@ def registerOwner():
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        returnStr = "Failed to create new Agent.Controller Entity.  %s, %s" %(errorID, errorMsg)
+        returnStr = f"Failed to create new Agent.Controller Entity.  {errorID}, {errorMsg}"
         response.status = 500
         return returnStr
     
@@ -900,7 +900,7 @@ def registerCreator():
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        returnStr = "Failed to create new Agent.Creator Entity.  %s, %s" %(errorID, errorMsg)
+        returnStr = f"Failed to create new Agent.Creator Entity.  {errorID}, {errorMsg}"
         response.body = json.dumps({"status": returnStr})
         response.status = 500
         return response
@@ -943,7 +943,7 @@ def registerListener():
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        returnStr = "Failed to register listener.  %s, %s" %(errorID, errorMsg)
+        returnStr = f"Failed to register listener.  {errorID}, {errorMsg}"
         response.body = json.dumps({"status": returnStr})
         response.status = 500
         return response
@@ -1000,7 +1000,7 @@ def log():
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        returnStr = "Error while logging.  %s, %s" %(errorID, errorMsg)
+        returnStr = f"Error while logging.  {errorID}, {errorMsg}"
         response.status = 500
         response.body = json.dumps({"status": returnStr})
         return response
@@ -1078,14 +1078,14 @@ def postAction():
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        response.body = "Failed to post action.  %s, %s" %(errorID, errorMsg)
+        response.body = f"Failed to post action.  {errorID}, {errorMsg}"
         response.status = 400
         return response  
     except Exceptions.MissingActionError:
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        response.body = "Failed to post action.  %s, %s" %(errorID, errorMsg)
+        response.body = f"Failed to post action.  {errorID}, {errorMsg}"
         response.status = 400
         return response       
     except Exception as unusedE: 
@@ -1101,7 +1101,7 @@ def postAction():
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        response.body = "Failed to post action %s.  %s, %s" %(actionID, errorID, errorMsg)
+        response.body = f"Failed to post action {actionID}.  {errorID}, {errorMsg}"
         response.status = 500
         return response
 
@@ -1175,14 +1175,14 @@ def postStimulus():
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        response.body = "Failed to post action.  %s, %s" %(errorID, errorMsg)
+        response.body = f"Failed to post action.  {errorID}, {errorMsg}"
         response.status = 400
         return response  
     except Exceptions.MissingActionError:
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        response.body = "Failed to post action.  %s, %s" %(errorID, errorMsg)
+        response.body = f"Failed to post action.  {errorID}, {errorMsg}"
         response.status = 400
         return response       
     except Exception as unusedE: 
@@ -1198,7 +1198,7 @@ def postStimulus():
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        response.body = "Failed to post action %s.  %s, %s" %(actionID, errorID, errorMsg)
+        response.body = f"Failed to post action {actionID}.  {errorID}, {errorMsg}"
         response.status = 500
         return response
     
@@ -1271,14 +1271,14 @@ def collectMessages():
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        response.body = "Failed to post action.  %s, %s" %(errorID, errorMsg)
+        response.body = f"Failed to post action.  {errorID}, {errorMsg}"
         response.status = 400
         return response  
     except Exceptions.MissingActionError:
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        response.body = "Failed to post action.  %s, %s" %(errorID, errorMsg)
+        response.body = f"Failed to post action.  {errorID}, {errorMsg}"
         response.status = 400
         return response       
     except Exception as unusedE: 
@@ -1294,7 +1294,7 @@ def collectMessages():
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        response.body = "Failed to post action %s.  %s, %s" %(actionID, errorID, errorMsg)
+        response.body = f"Failed to post action {actionID}.  {errorID}, {errorMsg}"
         response.status = 500
         return response
     
@@ -1309,7 +1309,7 @@ def createEntityFromMeme(memePath):
     
     try:
         newUUID = rmlEngine.api.createEntityFromMeme(memePath)
-        uuidAsStr = "%s" %(newUUID)
+        uuidAsStr = f"{newUUID}"
         
         response.status = 200
         response.body = json.dumps({"entityUUID": uuidAsStr})
@@ -1318,7 +1318,7 @@ def createEntityFromMeme(memePath):
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        response.body = "Failed to create new %s Entity.  %s, %s" %(memePath, errorID, errorMsg)
+        response.body = f"Failed to create new {memePath} Entity.  {errorID}, {errorMsg}"
         response.status = 500
         return response
     
@@ -1329,7 +1329,7 @@ def createEntity():
     
     try:
         newUUID = rmlEngine.api.createEntity()
-        uuidAsStr = "%s" %(newUUID)
+        uuidAsStr = f"{newUUID}"
         
         response.status = 200
         response.body = json.dumps({"entityUUID": uuidAsStr})
@@ -1338,7 +1338,7 @@ def createEntity():
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        response.body = "Failed to create new generic Entity %s.  %s, %s" %(newUUID, errorID, errorMsg)
+        response.body = f"Failed to create new generic Entity {newUUID}.  {errorID}, {errorMsg}"
         response.status = 500
         return response
     
@@ -1358,7 +1358,7 @@ def getEntityMemeType(entityUUID):
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        response.body = "Failed to get meme type of Entity %s.  %s, %s" %(entityUUID, errorID, errorMsg)
+        response.body = f"Failed to get meme type of Entity {entityUUID}.  {errorID}, {errorMsg}"
         response.status = 500
         return response
     
@@ -1377,7 +1377,7 @@ def getEntityMetaMemeType(entityUUID):
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        response.body = "Failed to get meme type of Entity %s.  %s, %s" %(entityUUID, errorID, errorMsg)
+        response.body = f"Failed to get meme type of Entity {entityUUID}.  {errorID}, {errorMsg}"
         response.status = 500
         return response
     
@@ -1400,7 +1400,7 @@ def getEntitiesByMemeType(memePath):
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        response.body = "Failed to find entitities of type %s.  %s, %s" %(memePath, errorID, errorMsg)
+        response.body = f"Failed to find entitities of type {memePath}.  {errorID}, {errorMsg}"
         response.status = 500
         return response
     
@@ -1423,7 +1423,7 @@ def getEntitiesByMetaMemeType(metaMemePath):
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        response.body = "Failed to find entitities of metameme type %s.  %s, %s" %(metaMemePath, errorID, errorMsg)
+        response.body = f"Failed to find entitities of metameme type {metaMemePath}.  {errorID}, {errorMsg}"
         response.status = 500
         return response
 
@@ -1476,7 +1476,7 @@ def addEntityLink():
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        returnStr = "Failed to link Entity %s to %s, % %s" %(sourceEntityID, targetEntityID, errorID, errorMsg)
+        returnStr = f"Failed to link Entity {sourceEntityID} to {targetEntityID}, % {errorID}"
         response.body = json.dumps({"sourceEntityUUID": sourceEntityID, "targetEntityID": targetEntityID, "linkAttributes" : linkAttributes, "linkType" : linkType, "status": "failure", "message" : returnStr})
         response.status = 500
         return response
@@ -1498,7 +1498,7 @@ def removeEntityLink(sourceEntityID, targetEntityID):
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        returnStr = "Failed to remove link from Entity %s to %s, % %s" %(sourceEntityID, targetEntityID, errorID, errorMsg)
+        returnStr = f"Failed to remove link from Entity {sourceEntityID} to {targetEntityID}, % {errorID}"
         response.status = 500
         return returnStr
 
@@ -1519,7 +1519,7 @@ def getAreEntitiesLinked(sourceEntityID, targetEntityID):
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        returnStr = "Failed to remove link from Entity %s to %s, % %s" %(sourceEntityID, targetEntityID, errorID, errorMsg)
+        returnStr = f"Failed to remove link from Entity {sourceEntityID} to {targetEntityID}, % {errorID}"
         response.status = 500
         return returnStr
     
@@ -1541,7 +1541,7 @@ def getEntityHasProperty(entityID, propName):
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        returnStr = "Failed to set property %s to %s on Entity %s, % %s" %(propName, propValue, entityID, errorID, errorMsg)
+        returnStr = f"Failed to set property {propName} to {propValue} on Entity {entityID}, % {errorID}"
         response.status = 500
         return returnStr
     
@@ -1561,7 +1561,7 @@ def getEntityPropertyValue(entityID, propName):
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        returnStr = "Failed to set property %s to %s on Entity %s, % %s" %(propName, propValue, entityID, errorID, errorMsg)
+        returnStr = f"Failed to set property {propName} to {propValue} on Entity {entityID}, % {errorID}"
         response.status = 500
         return returnStr
 
@@ -1608,7 +1608,7 @@ def setEntityPropertyValue():
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        returnStr = "Failed to set property %s to %s on Entity %s, % %s" %(propName, propValue, entityID, errorID, errorMsg)
+        returnStr = f"Failed to set property {propName} to {propValue} on Entity {entityID}, % {errorID}"
         response.status = 500
         return returnStr
         
@@ -1680,7 +1680,7 @@ def getLinkCounterpartsByType():
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        response.body = "Graph traverse query %s from entity %s failed.  %s, %s %s" %(memePath, entityUUID, entityID, errorID, errorMsg)
+        response.body = f"Graph traverse query {memePath} from entity {entityUUID} failed.  {entityID}, {errorID} {errorMsg}"
         response.status = 500
         return response
 
@@ -1738,7 +1738,7 @@ def getLinkCounterpartsByMetaMemeType():
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        returnStr = "Graph traverse query %s from entity %s failed.  %s, %s %s" %(memePath, entityUUID, entityID, errorID, errorMsg)
+        returnStr = f"Graph traverse query {memePath} from entity {entityUUID} failed.  {entityID}, {errorID} {errorMsg}"
         response.status = 500
         return returnStr        
     
@@ -1794,7 +1794,7 @@ def getTraverseReport():
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        returnStr = "Graph traverse query %s from entity %s failed.  %s, %s %s" %(memePath, entityUUID, entityID, errorID, errorMsg)
+        returnStr = f"Graph traverse query {memePath} from entity {entityUUID} failed.  {entityID}, {errorID} {errorMsg}"
         response.status = 500
         return returnStr  
     
@@ -1848,7 +1848,7 @@ def getTraverseReportByMetaMemes():
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        returnStr = "Graph traverse query %s from entity %s failed.  %s, %s %s" %(memePath, entityUUID, entityID, errorID, errorMsg)
+        returnStr = f"Graph traverse query {memePath} from entity {entityUUID} failed.  {entityID}, {errorID} {errorMsg}"
         response.status = 500
         return returnStr       
 
@@ -1867,7 +1867,7 @@ def addCreator():
     try:
         global rmlEngine
         newUUID = rmlEngine.api.createEntityFromMeme("Agent.Creator")
-        uuidAsStr = "%s" %(newUUID)
+        uuidAsStr = f"{newUUID}"
         
         response.status = 200
         response.body = json.dumps({"entityUUID": uuidAsStr})
@@ -1876,7 +1876,7 @@ def addCreator():
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        returnStr = "Failed to create new Agent.Owner Entity.  %s, %s" %(errorID, errorMsg)
+        returnStr = f"Failed to create new Agent.Owner Entity.  {errorID}, {errorMsg}"
         response.status = 500
         return returnStr
     
@@ -1907,10 +1907,10 @@ def registerCreatorDataCallbackURL():
         try:
             ownerEntityType = rmlEngine.api.getEntityMemeType(creatorUUID)
         except Exception as e:
-            raise Exceptions.NoSuchEntityError("creatorID parameter value %s does not exist." %creatorID)
+            raise Exceptions.NoSuchEntityError(f"creatorID parameter value {creatorID} does not exist.")
         
         if ownerEntityType != "Agent.Creator":
-            raise Exceptions.TemplatePathError("creatorID parameter value %s does not refer to a valid data creator" %creatorID)
+            raise Exceptions.TemplatePathError(f"creatorID parameter value {creatorID} does not refer to a valid data creator")
 
         #stimulusCallbackURL
         try:
@@ -1923,10 +1923,10 @@ def registerCreatorDataCallbackURL():
         try:
             rmlEngine.api.setEntityPropertyValue(creatorUUID, "dataCallbackURL", dataCallbackURL)
         except Exception as e:
-            raise Exceptions.MismatchedPOSTParametersError("Error while assigning stimulusCallbackURL value %s to entity %s " %(dataCallbackURL, creatorID))
+            raise Exceptions.MismatchedPOSTParametersError(f"Error while assigning stimulusCallbackURL value {dataCallbackURL} to entity {creatorID} ")
 
         
-        returnStr = "Assigned dataCallbackURL %s to owner %s " %(dataCallbackURL, creatorID)
+        returnStr = f"Assigned dataCallbackURL {dataCallbackURL} to owner {creatorID} "
         response.body = json.dumps({"status": returnStr})
         response.status = 200
         return response
@@ -1934,7 +1934,7 @@ def registerCreatorDataCallbackURL():
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        returnStr = "Failed to assign dataCallbackURL to  new Agent.Creator Entity.  %s, %s" %(errorID, errorMsg)
+        returnStr = f"Failed to assign dataCallbackURL to  new Agent.Creator Entity.  {errorID}, {errorMsg}"
         response.body = json.dumps({"status": returnStr})
         response.status = 500
         return response
@@ -1967,10 +1967,10 @@ def registerCreatorStimulusCallbackURL():
         try:
             ownerEntityType = rmlEngine.api.getEntityMemeType(creatorUUID)
         except Exception as e:
-            raise Exceptions.NoSuchEntityError("creatorID parameter value %s does not exist." %creatorID)
+            raise Exceptions.NoSuchEntityError(f"creatorID parameter value {creatorID} does not exist.")
         
         if ownerEntityType != "Agent.Creator":
-            raise Exceptions.TemplatePathError("creatorID parameter value %s does not refer to a valid data creator" %creatorID)
+            raise Exceptions.TemplatePathError(f"creatorID parameter value {creatorID} does not refer to a valid data creator")
                 
         
         #stimulusCallbackURL
@@ -1984,9 +1984,9 @@ def registerCreatorStimulusCallbackURL():
         try:
             rmlEngine.api.setEntityPropertyValue(creatorUUID, "stimulusCallbackURL", stimulusCallbackURL)
         except Exception as e:
-            raise Exceptions.MismatchedPOSTParametersError("Error while assigning stimulusCallbackURL value %s to entity %s " %(stimulusCallbackURL, creatorID))
+            raise Exceptions.MismatchedPOSTParametersError(f"Error while assigning stimulusCallbackURL value {stimulusCallbackURL} to entity {creatorID} ")
 
-        returnStr = "Assigned stimulusCallbackURL %s to owner %s " %(stimulusCallbackURL, creatorID)
+        returnStr = f"Assigned stimulusCallbackURL {stimulusCallbackURL} to owner {creatorID} "
         response.body = json.dumps({"status": returnStr})
         response.status = 200
         return response
@@ -1994,7 +1994,7 @@ def registerCreatorStimulusCallbackURL():
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        returnStr = "Failed to assign dataCallbackURL to  new Agent.Creator Entity.  %s, %s" %(errorID, errorMsg)
+        returnStr = f"Failed to assign dataCallbackURL to  new Agent.Creator Entity.  {errorID}, {errorMsg}"
         response.status = 500
         return returnStr
     
@@ -2008,7 +2008,7 @@ def addOwner():
     try:
         global rmlEngine
         newUUID = rmlEngine.api.createEntityFromMeme("Agent.Owner")
-        uuidAsStr = "%s" %(newUUID)
+        uuidAsStr = f"{newUUID}"
         
         response.status = 200
         response.body = json.dumps({"entityUUID": uuidAsStr})
@@ -2017,7 +2017,7 @@ def addOwner():
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        returnStr = "Failed to create new Agent.Owner Entity.  %s, %s" %(errorID, errorMsg)
+        returnStr = f"Failed to create new Agent.Owner Entity.  {errorID}, {errorMsg}"
         response.status = 500
         return returnStr
     
@@ -2051,10 +2051,10 @@ def registerOwnerCallbackURL():
         try:
             ownerEntityType = rmlEngine.api.getEntityMemeType(ownerUUID)
         except Exception as e:
-            raise Exceptions.NoSuchEntityError("ownerID parameter value %s does not exist." %ownerID)
+            raise Exceptions.NoSuchEntityError(f"ownerID parameter value {ownerID} does not exist.")
         
         if ownerEntityType != "Agent.Owner":
-            raise Exceptions.TemplatePathError("ownerID parameter value %s does not refer to a valid data owner" %ownerID)
+            raise Exceptions.TemplatePathError(f"ownerID parameter value {ownerID} does not refer to a valid data owner")
         
         
         #stimulusCallbackURL
@@ -2068,10 +2068,10 @@ def registerOwnerCallbackURL():
         try:
             rmlEngine.api.setEntityPropertyValue(ownerUUID, "stimulusCallbackURL", stimulusCallbackURL)
         except Exception as e:
-            raise Exceptions.MismatchedPOSTParametersError("Error while assigning stimulusCallbackURL value %s to entity %s " %(stimulusCallbackURL, ownerID))
+            raise Exceptions.MismatchedPOSTParametersError(f"Error while assigning stimulusCallbackURL value {stimulusCallbackURL} to entity {ownerID} ")
 
         
-        returnStr = "Assigned stimulusCallbackURL %s to owner %s " %(stimulusCallbackURL, ownerID)
+        returnStr = f"Assigned stimulusCallbackURL {stimulusCallbackURL} to owner {ownerID} "
         response.body = json.dumps({"status": returnStr})
         response.status = 200
         return response
@@ -2079,7 +2079,7 @@ def registerOwnerCallbackURL():
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        returnStr = "Failed to create new Agent.Owner Entity.  %s, %s" %(errorID, errorMsg)
+        returnStr = f"Failed to create new Agent.Owner Entity.  {errorID}, {errorMsg}"
         response.status = 500
         return returnStr
     
@@ -2108,10 +2108,10 @@ def broadcasterSubscribe():
         try:
             entityType = rmlEngine.api.getEntityMemeType(entityUUID)
         except Exception as e:
-            raise Exceptions.NoSuchEntityError("ownerID parameter value %s does not exist." %entityID)
+            raise Exceptions.NoSuchEntityError(f"ownerID parameter value {entityID} does not exist.")
         
         if (entityType != "Agent.Owner") and (entityType != "Agent.Creator"):
-            raise Exceptions.TemplatePathError("entityID parameter value %s refers to an entity of type %s.  Only data owners and data creators (Agent.Owner and Agent.Creator) may subscribe to broadbasters" %(entityID, entityType))
+            raise Exceptions.TemplatePathError(f"entityID parameter value {entityID} refers to an entity of type {entityType}.  Only data owners and data creators (Agent.Owner and Agent.Creator) may subscribe to broadbasters")
         
         try:
             callbackURL = rawRequest["CallbackURL"]
@@ -2122,7 +2122,7 @@ def broadcasterSubscribe():
         
         newUUID = addMolecule("Agent.Molecule", "data", technicalName, creatorID, ownerID, rawRequest)    
         unusedPropertySetResults = rmlEngine.api.setEntityPropertyValue(newUUID, "CallbackURL", callbackURL)    
-        returnStr = "%s" %newUUID
+        returnStr = f"{newUUID}"
         response.body = json.dumps({"entityUUID": newUUID})
         response.status = 200
         return response       
@@ -2159,10 +2159,10 @@ def broadcasterUnSubscribe():
         try:
             entityType = rmlEngine.api.getEntityMemeType(entityUUID)
         except Exception as e:
-            raise Exceptions.NoSuchEntityError("ownerID parameter value %s does not exist." %entityID)
+            raise Exceptions.NoSuchEntityError(f"ownerID parameter value {entityID} does not exist.")
         
         if (entityType != "Agent.Owner") and (entityType != "Agent.Creator"):
-            raise Exceptions.TemplatePathError("entityID parameter value %s refers to an entity of type %s.  Only data owners and data creators (Agent.Owner and Agent.Creator) may subscribe to broadbasters" %(entityID, entityType))
+            raise Exceptions.TemplatePathError(f"entityID parameter value {entityID} refers to an entity of type {entityType}.  Only data owners and data creators (Agent.Owner and Agent.Creator) may subscribe to broadbasters")
         
         try:
             callbackURL = rawRequest["CallbackURL"]
@@ -2173,7 +2173,7 @@ def broadcasterUnSubscribe():
         
         newUUID = addMolecule("Agent.Molecule", "data", technicalName, creatorID, ownerID, rawRequest)    
         unusedPropertySetResults = rmlEngine.api.setEntityPropertyValue(newUUID, "CallbackURL", callbackURL)    
-        returnStr = "%s" %newUUID
+        returnStr = f"{newUUID}"
         response.body = json.dumps({"entityUUID": newUUID})
         response.status = 200
         return response       
@@ -2209,10 +2209,10 @@ def broadcasterCatalog():
         try:
             entityType = rmlEngine.api.getEntityMemeType(entityUUID)
         except Exception as e:
-            raise Exceptions.NoSuchEntityError("ownerID parameter value %s does not exist." %entityID)
+            raise Exceptions.NoSuchEntityError(f"ownerID parameter value {entityID} does not exist.")
         
         if (entityType != "Agent.Owner") and (entityType != "Agent.Creator"):
-            raise Exceptions.TemplatePathError("entityID parameter value %s refers to an entity of type %s.  Only data owners and data creators (Agent.Owner and Agent.Creator) may subscribe to broadbasters" %(entityID, entityType))
+            raise Exceptions.TemplatePathError(f"entityID parameter value {entityID} refers to an entity of type {entityType}.  Only data owners and data creators (Agent.Owner and Agent.Creator) may subscribe to broadbasters")
         
         try:
             callbackURL = rawRequest["CallbackURL"]
@@ -2223,7 +2223,7 @@ def broadcasterCatalog():
         
         newUUID = addMolecule("Agent.Molecule", "data", technicalName, creatorID, ownerID, rawRequest)    
         unusedPropertySetResults = rmlEngine.api.setEntityPropertyValue(newUUID, "CallbackURL", callbackURL)    
-        returnStr = "%s" %newUUID
+        returnStr = f"{newUUID}"
         response.body = json.dumps({"entityUUID": newUUID})
         response.status = 200
         return response       
@@ -2258,7 +2258,7 @@ def addDataMolecule(technicalName, creatorID, ownerID):
         
         newUUID = addMolecule("Agent.Molecule", "data", technicalName, creatorID, ownerID, rawRequest)    
         unusedPropertySetResults = rmlEngine.api.setEntityPropertyValue(newUUID, "CallbackURL", callbackURL)    
-        returnStr = "%s" %newUUID
+        returnStr = f"{newUUID}"
         response.body = json.dumps({"entityUUID": newUUID})
         response.status = 200
         return response       
@@ -2306,7 +2306,7 @@ def addEvent(moduleName, eventName):
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        abort(500, "%s %2" %(errorID, errorMsg))
+        abort(500, f"{errorID} %2")
         
         
     
@@ -2345,7 +2345,7 @@ def addIntent(moduleName, intentName):
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        abort(500, "%s %2" %(errorID, errorMsg))
+        abort(500, f"{errorID} %2")
         
 
 
@@ -2555,7 +2555,7 @@ def addTag(moduleName, tagName):
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        abort(500, "%s %2" %(errorID, errorMsg))
+        abort(500, f"{errorID} %2")
         
         
  
@@ -2735,20 +2735,20 @@ def offerIntentService(intentServiceMoleculeID, intent):
             intentEntityID = rmlEngine.api.createEntityFromMeme(intent)
             intentEntityType = rmlEngine.api.getEntityMetaMemeType(intentEntityID)
             if intentEntityType != 'Agent.IntentMM':
-                errorMessage = "%s is not an intent" %intent
+                errorMessage = f"{intent} is not an intent"
                 raise Exceptions.IntentError(errorMessage)                
         except Exceptions.ScriptError:
-            errorMessage = "Invalid Intent %s" %intent
+            errorMessage = f"Invalid Intent {intent}"
             raise Exceptions.IntentError(errorMessage)
         
         #And only intent service molecules can support intents.
         try:
             intentMoleculeType = rmlEngine.api.getEntityMemeType(intentServiceMoleculeID)
             if intentMoleculeType != 'Agent.IntentMolecule':
-                errorMessage = "%s is not an intent service molecule." %intentServiceMoleculeID
+                errorMessage = f"{intentServiceMoleculeID} is not an intent service molecule."
                 raise Exceptions.IntentServiceMoleculeError(errorMessage)                
         except Exceptions.ScriptError:
-            errorMessage = "Invalid Intent %s" %intent
+            errorMessage = f"Invalid Intent {intent}"
             raise Exceptions.IntentError(errorMessage)
         
         #Next, check to see that we don't already support an intent.  If we do, that support will have to be revoked first.
@@ -2782,13 +2782,13 @@ def revokeIntentService(intentServiceMoleculeID):
     try:
         intentMoleculeType = rmlEngine.api.getEntityMemeType(intentServiceMoleculeID)
         if intentMoleculeType != 'Agent.IntentMolecule':
-            errorMessage = "%s is not an intent service molecule." %intentServiceMoleculeID
+            errorMessage = f"{intentServiceMoleculeID} is not an intent service molecule."
             raise Exceptions.IntentServiceMoleculeError(errorMessage)
         
         #Next, check to see that we don't already support an intent.  If we do, that support will have to be revoked first.
         existingIntentList = rmlEngine.api.getLinkCounterpartsByMetaMemeType(intentServiceMoleculeID, 'Agent.IntentMM')
         if len(existingIntentList) < 1:
-            returnResults = "Intent Service molecule %s has no declared intents" %(intentServiceMoleculeID)
+            returnResults = f"Intent Service molecule {intentServiceMoleculeID} has no declared intents"
             raise Exceptions.IntentError(errorMessage)
         else:
             for existingIntentID in existingIntentList:
@@ -2852,14 +2852,14 @@ def addProperty(moduleName, propertyName):
         unusedReturn = rmlEngine.api.sourceMemeCompile(tagCreationReport["memeID"], False)
         unusedReturn = rmlEngine.api.createEntityFromMeme(tagCreationReport["memeID"])
         
-        returnStr = "%s" %tagCreationReport["memeID"]  
+        returnStr = tagCreationReport["memeID"]  
         response.status = 200
         return returnStr
     except Exception:
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        abort(500, "%s %2" %(errorID, errorMsg))
+        abort(500, f"{errorID} %2")
         
         
         
@@ -2879,7 +2879,7 @@ def getPropertyCatalog():
             propertyMemeDict[entityMemetype] = {"propertyID" : propertyEntityID, "propertyDescription" : entityDescription}
         returnJSON = json.loads(propertyMemeDict)
         
-        returnStr = "%s" %returnJSON  
+        returnStr = f"{returnJSON}"  
         response.status = 200
         return returnStr     
     except Exception as unusedE: 
@@ -2905,7 +2905,7 @@ def getPropertyList():
         
         returnJSON = json.loads(returnList)
         
-        returnStr = "%s" %returnJSON  
+        returnStr = f"{returnJSON}"  
         response.status = 200
         return returnStr    
     except Exception as unusedE: 
@@ -2929,10 +2929,10 @@ def assignTagProperty(tagName, propertyName):
             tagEntityID = rmlEngine.api.createEntityFromMeme(tagName)
             tagEntityType = rmlEngine.api.getEntityMetaMemeType(tagEntityID)
             if tagEntityType != 'Agent.TagMM':
-                errorMessage = "%s is not a tag" %tagName
+                errorMessage = f"{tagName} is not a tag"
                 raise Exceptions.IntentError(errorMessage)                
         except Exceptions.ScriptError:
-            errorMessage = "Invalid tag %s" %tagName
+            errorMessage = f"Invalid tag {tagName}"
             raise Exceptions.IntentError(errorMessage)
         
         #First, check to see that the desired property name exists.
@@ -2941,17 +2941,17 @@ def assignTagProperty(tagName, propertyName):
             propertyEntityID = rmlEngine.api.createEntityFromMeme(propertyName)
             propertyEntityType = rmlEngine.api.getEntityMetaMemeType(propertyEntityID)
             if propertyEntityType != 'Agent.RESTPropertyMM':
-                errorMessage = "%s is not a property" %propertyName
+                errorMessage = f"{propertyName} is not a property"
                 raise Exceptions.IntentError(errorMessage)                
         except Exceptions.ScriptError:
-            errorMessage = "Invalid tag %s" %propertyName
+            errorMessage = f"Invalid tag {propertyName}"
             raise Exceptions.IntentError(errorMessage)
         
         #Still here and not thrown any exceptions?  Ok, we can assign attach the service to the intent
         returnResults = rmlEngine.api.addEntityLink(tagEntityID, propertyEntityID)
         returnResultsJson = json.dumps(returnResults)
         
-        returnStr = "%s" %(returnResultsJson)
+        returnStr = f"{returnResultsJson}"
         response.status = 200
         return returnStr   
     except Exception as unusedE: 
@@ -2975,10 +2975,10 @@ def removeTagProperty(tagName, propertyName):
             tagEntityID = rmlEngine.api.createEntityFromMeme(tagName)
             tagEntityType = rmlEngine.api.getEntityMetaMemeType(tagEntityID)
             if tagEntityType != 'Agent.TagMM':
-                errorMessage = "%s is not a tag" %tagName
+                errorMessage = f"{tagName} is not a tag"
                 raise Exceptions.IntentError(errorMessage)                
         except Exceptions.ScriptError:
-            errorMessage = "Invalid tag %s" %tagName
+            errorMessage = f"Invalid tag {tagName}"
             raise Exceptions.IntentError(errorMessage)
         
         #First, check to see that the desired property name exists.
@@ -2987,17 +2987,17 @@ def removeTagProperty(tagName, propertyName):
             propertyEntityID = rmlEngine.api.createEntityFromMeme(propertyName)
             propertyEntityType = rmlEngine.api.getEntityMetaMemeType(propertyEntityID)
             if propertyEntityType != 'Agent.RESTPropertyMM':
-                errorMessage = "%s is not a property" %propertyName
+                errorMessage = f"{propertyName} is not a property"
                 raise Exceptions.IntentError(errorMessage)                
         except Exceptions.ScriptError:
-            errorMessage = "Invalid tag %s" %propertyName
+            errorMessage = f"Invalid tag {propertyName}"
             raise Exceptions.IntentError(errorMessage)
         
         #Still here and not thrown any exceptions?  Ok, we can assign attach the service to the intent
         returnResults = rmlEngine.api.addEntityLink(tagEntityID, propertyEntityID)
         returnResultsJson = json.dumps(returnResults)
         
-        returnStr = "%s" %(returnResultsJson)
+        returnStr = f"{returnResultsJson}"
         response.status = 200
         return returnStr   
     except Exception as unusedE: 
@@ -3022,7 +3022,7 @@ def getMoleculeAPIDefinition(moleculeID):
             availableAPIProperties[entityMemetype] = {"propertyID" : propertyEntityID, "propertyDescription" : entityDescription}
         returnJSON = json.loads(availableAPIProperties)
         
-        returnStr = "%s" %returnJSON  
+        returnStr = f"{returnJSON}"  
         response.status = 200
         return returnStr     
     except Exception as unusedE: 
@@ -3054,7 +3054,7 @@ def declareEvent(moleculeID, eventName):
         returnResults = rmlEngine.api.addEntityLink(moleculeID, eventEntityList[0])
         returnResultsJson = json.dumps(returnResults)
         
-        returnStr = "%s" %returnResultsJson  
+        returnStr = f"{returnResultsJson}"  
         response.status = 200
         return returnStr     
     except Exception as unusedE: 
@@ -3089,7 +3089,7 @@ def disableEvent(moleculeID, eventName):
         returnResults = rmlEngine.api.removeEntityLink(moleculeID, eventEntityList[0])
         returnResultsJson = json.dumps(returnResults)
         
-        returnStr = "%s" %returnResultsJson  
+        returnStr = f"{returnResultsJson}"  
         response.status = 200
         return returnStr     
     except Exception as unusedE: 
@@ -3127,7 +3127,7 @@ def attachEventListener(moleculeID, eventName):
         returnResults = rmlEngine.api.addEntityLink(moleculeID, eventEntityList[0])
         returnResultsJson = json.dumps(returnResults)
         
-        returnStr = "%s" %returnResultsJson  
+        returnStr = f"{returnResultsJson}"  
         response.status = 200
         return returnStr     
     except Exception as unusedE: 
@@ -3171,7 +3171,7 @@ def getEventListeners(moleculeID):
                             availableEventListeners[eventMeme] = {eventTechnicalName : {"eventDescription" : eventDescription}}
         returnResultsJson = json.dumps(availableEventListeners)
         
-        returnStr = "%s" %returnResultsJson  
+        returnStr = f"{returnResultsJson}"  
         response.status = 200
         return returnStr     
     except Exception as unusedE: 
@@ -3244,7 +3244,7 @@ def action(ownerID, subjectID, nodeID):
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        returnStr = "Failed to post action %s.  %s, %s" %(errorID, errorMsg)
+        returnStr = f"Failed to post action {errorID}.  {errorMsg}, %s"
         response.status = 500
         return returnStr
 
@@ -3281,7 +3281,7 @@ def fireevent(ownerID, subjectID, nodeID):
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        returnStr = "Failed to post action %s.  %s, %s" %(errorID, errorMsg)
+        returnStr = f"Failed to post action {errorID}.  {errorMsg}, %s"
         response.status = 500
         return returnStr
     
@@ -3310,7 +3310,7 @@ def invokeintent(moleculeID, intentID):
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        returnStr = "Failed to post action %s.  %s, %s" %(errorID, errorMsg)
+        returnStr = f"Failed to post action {errorID}.  {errorMsg}, %s"
         response.status = 500
         return returnStr
     
@@ -3328,18 +3328,18 @@ def getStimulusReports(ownerID):
         try:
             ownerEntityType = rmlEngine.api.getEntityMemeType(ownerUUID)
         except Exception as e:
-            raise Exceptions.NoSuchEntityError("ownerID parameter value %s does not exist." %ownerID)
+            raise Exceptions.NoSuchEntityError(f"ownerID parameter value {ownerID} does not exist.")
         
         try:
             ownerEntityType = rmlEngine.api.getEntityMemeType(ownerUUID)
         except Exception as e:
-            raise Exceptions.NoSuchEntityError("ownerID parameter value %s does not exist." %ownerID)
+            raise Exceptions.NoSuchEntityError(f"ownerID parameter value {ownerID} does not exist.")
         
         if ownerEntityType != "Agent.Owner":
-            raise Exceptions.TemplatePathError("ownerID parameter value %s does not refer to a valid data owner" %ownerID)
+            raise Exceptions.TemplatePathError(f"ownerID parameter value {ownerID} does not refer to a valid data owner")
         
         if ownerUUID not in Engine.broadcasterRegistrar.broadcasterIndex:
-            errorMsg = "No broadcast queue assigned for data owner %s" %ownerID
+            errorMsg = f"No broadcast queue assigned for data owner {ownerID}"
             raise Exceptions.NoSuchBroadcasterError(errorMsg)
         else:
             #pop the report from myQueue and fire self.onStimulusReport()
@@ -3358,7 +3358,7 @@ def getStimulusReports(ownerID):
         fullerror = sys.exc_info()
         errorID = str(fullerror[0])
         errorMsg = str(fullerror[1])
-        returnStr = "Failed to retrieve stimuli %s.  %s, %s" %(errorID, errorMsg)
+        returnStr = f"Failed to retrieve stimuli {errorID}.  {errorMsg}, %s"
         response.status = 500
         return returnStr
     

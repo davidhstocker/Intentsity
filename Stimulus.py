@@ -65,7 +65,7 @@ class InitText(Graphyne.Scripting.StateEventScript):
 
         if descriptorContainerUUID is None:
             descriptorEntityMemeType = Graph.api.getEntityMemeType(descriptorUUID)
-            warningMsg = "Descriptor Meme %s has no parent Stimulus.Descriptor assigned." %descriptorEntityMemeType
+            warningMsg = f"Descriptor Meme {descriptorEntityMemeType} has no parent Stimulus.Descriptor assigned."
             Graph.api.writeError(warningMsg)
         else:
             descriptorContainerMemeType = Graph.api.getEntityMemeType(descriptorContainerUUID)
@@ -74,16 +74,16 @@ class InitText(Graphyne.Scripting.StateEventScript):
                 text = Text(descriptorUUID)
                 Graph.api.installPythonExecutor(descriptorContainerUUID, text)
                 descriptorContainerMemeType = Graph.api.getEntityMemeType(descriptorContainerUUID)
-                logStatement = "Added executor object to %s descriptor %s" %(descriptorContainerMetaMemeType, descriptorContainerMemeType)
+                logStatement = f"Added executor object to {descriptorContainerMetaMemeType} descriptor {descriptorContainerMemeType}"
                 Graph.api.writeLog(logStatement)
             except ContentExceptions.ScriptError as e:
                 descriptorEntityMemeType = Graph.api.getEntityMemeType(descriptorUUID)
-                errorMsg = "%s has no evaluate state event script!  Aborting initialization of parent descriptor %s" %(descriptorEntityMemeType, descriptorContainerMemeType)
+                errorMsg = f"{descriptorEntityMemeType} has no evaluate state event script!  Aborting initialization of parent descriptor {descriptorContainerMemeType}"
                 Graph.api.writeError(errorMsg)
                 raise ContentExceptions.StateEventScriptInitError(e)
             except Exception as e:
                 descriptorEntityMemeType = Graph.api.getEntityMemeType(descriptorUUID)
-                errorMsg = "Unknown error while executing init script of %s and installing executor on parent descriptor %s" %(descriptorEntityMemeType, descriptorContainerMemeType)
+                errorMsg = f"Unknown error while executing init script of {descriptorEntityMemeType} and installing executor on parent descriptor {descriptorContainerMemeType}"
                 Graph.api.writeError(errorMsg)
                 raise ContentExceptions.StateEventScriptInitError(e)                
 
@@ -153,7 +153,7 @@ class ComplexTokenObject(object):
     
     def __init__(self, conditionalDescriptorUUID):
         method = module + '.' +  self.className + '.__init__'
-        Graph.api.writeLog("Entering %s" %method)
+        Graph.api.writeLog(f"Entering {method}")
         
         #First, get the uuid of the ConditionalDescriptor's linked condition
         self.conditionUUID = None
@@ -168,7 +168,7 @@ class ComplexTokenObject(object):
         for descriptorUUID in descriptorUUIDSet:
             #There should be only one entry
             self.descriptorUUID = descriptorUUID
-        Graph.api.writeLog("Exiting %s" %method)
+        Graph.api.writeLog(f"Exiting {method}")
         
     def testConditionalDescriptor(self, rtParams, actionID = None, subjectID = None, controllerID = None):
         #entityUUID, runtimeVariables, ActionID = None, Subject = None, Controller = None, supressInit = False
@@ -201,10 +201,10 @@ class ComplexToken(threading.Thread):
     
     def __init__(self, cdCheckList, defaultDescriptor):
         method = module + '.' +  self.className + '.__init__'
-        Graph.api.writeLog("Entering %s" %method)
+        Graph.api.writeLog(f"Entering {method}")
         self.cdCheckList = cdCheckList
         self.defaultDescriptor = defaultDescriptor
-        Graph.api.writeLog("Exiting %s" %method)
+        Graph.api.writeLog(f"Exiting {method}")
         
 
 
@@ -219,25 +219,25 @@ class ComplexToken(threading.Thread):
         for variantKey in self.cdCheckList:
             try:
                 testResult = False
-                Graph.api.writeDebug( '%s Testing condition %s' %(method, variantKey))
+                Graph.api.writeDebug( f'{method} Testing condition {variantKey}')
                 #uuidVariantKey = uuid.UUID(variantKey)
                 conditionalDescriptor = self.cdCheckList[variantKey]
                 isTrue = conditionalDescriptor.testConditionalDescriptor(rtParams[1], actionID, subjectID, controllerID)
                 if isTrue == True:
                     chosenDescriptor = conditionalDescriptor.getConditionalDescriptor(rtParams[1], actionID, subjectID, controllerID)
                     testResult = True
-                Graph.api.writeDebug( '%s Condition %s test result = %s' % (method, variantKey, testResult))
+                Graph.api.writeDebug( f'{method} Condition {variantKey} test result = {testResult}')
                 if (testResult == True) and (keepIterating == True):
                     chosenConditionKey = variantKey
                     keepIterating = False
                     break
             except Exception as e:
                 lengthOfChecklist = len(self.cdCheckList)
-                errorMsg = "Error evaluating conditional descriptor %s out of %s.  Traceback = %s" %(variantKey, lengthOfChecklist, e)
+                errorMsg = f"Error evaluating conditional descriptor {variantKey} out of {lengthOfChecklist}.  Traceback = {e}"
                 raise Exception(errorMsg)
  
         #Now determine the descriptor associated with the condition
-        Graph.api.writeDebug( '%s Chosen Condition = %s' %(method, chosenConditionKey))
+        Graph.api.writeDebug( f'{method} Chosen Condition = {chosenConditionKey}')
         descriptor = None
         if chosenDescriptor is None:
             descriptor = self.defaultDescriptor
@@ -247,7 +247,7 @@ class ComplexToken(threading.Thread):
                 descriptor =  'INVALID_DESCRIPTOR'
         else:
             descriptor = chosenDescriptor
-        Graph.api.writeDebug( '%s Counterpart Descriptor = %s' %(method, descriptor))
+        Graph.api.writeDebug( f'{method} Counterpart Descriptor = {descriptor}')
  
         return descriptor
 
@@ -262,17 +262,17 @@ class InternationalizedDescriptor(threading.Thread):
 
     def __init__(self, descriptorEntityUUID, descriptorContainerUUID):
         method = module + '.' +  self.className + '.__init__'
-        Graph.api.writeLog("Entering %s" %method)
+        Graph.api.writeLog(f"Entering {method}")
         self.devLanguage = "en"
         self.descriptor = {}
         self.descriptorEntityUUID = descriptorEntityUUID
         self.descriptorContainerUUID = descriptorContainerUUID
-        Graph.api.writeLog("Exiting %s" %method)
+        Graph.api.writeLog(f"Exiting {method}")
         
         
     def execute(self, unusedUUID, rtParams):
         method = module + '.' +  self.className + '.__init__'
-        Graph.api.writeLog("Entering %s" %method) 
+        Graph.api.writeLog(f"Entering {method}") 
         internationalizedDescriptor = None   
         actionID = rtParams['actionID']
         subjectID = rtParams['subjectID']
@@ -286,13 +286,13 @@ class InternationalizedDescriptor(threading.Thread):
                 internationalizedDescriptor = self.descriptor[language]
             else:
                 descriptorEntityMeme = Graph.api.getEntityMemeType(self.descriptorEntityUUID)
-                Graph.api.writeError(" %s has no localized descriptor maintained for dev language, %s" %(descriptorEntityMeme, self.devLanguage))
+                Graph.api.writeError(f" {descriptorEntityMeme} has no localized descriptor maintained for dev language, {self.devLanguage}")
                 return "NO_TEXT_MAINTAINED"
         elif self.devLanguage in self.descriptor:
             internationalizedDescriptor = self.descriptor[self.devLanguage]
         else:
             descriptorEntityMeme = Graph.api.getEntityMemeType(self.descriptorEntityUUID)
-            Graph.api.writeError(" %s has no localized descriptor maintained for dev language, %s" %(descriptorEntityMeme, self.devLanguage))
+            Graph.api.writeError(f" {descriptorEntityMeme} has no localized descriptor maintained for dev language, {self.devLanguage}")
             return "NO_TEXT_MAINTAINED"
         
         returnText = Graph.api.evaluateEntity(internationalizedDescriptor, rtParams, actionID, subjectID, controllerID, True)
@@ -310,7 +310,7 @@ class InternationalizedDescriptor(threading.Thread):
         at runtime to create dynamic text.  Each member of the list may be Unicode text, a UUID, or a 
         SimpleArgument object; each representing a text fragment, a complex token, or a simple token. """
         method = module + '.' +  self.className + '.addDescriptors'
-        Graph.api.writeLog("Entering %s" %method)
+        Graph.api.writeLog(f"Entering {method}")
 
         try:
             localizedDescriptorUUIDSet = Graph.api.getLinkCounterpartsByMetaMemeType(self.descriptorEntityUUID, "Stimulus.LocalizedDescriptor", 1)
@@ -360,7 +360,7 @@ class InternationalizedDescriptor(threading.Thread):
  
                 #Now that we have internailzed the tokens used by the descriptor, we can turn to the text string itself. 
                 baseText = Graph.api.getEntityPropertyValue(localizedDescriptorUUID, "Text")  
-                tagString = re.compile('\[/?[^\]]+\]')
+                tagString = re.compile(r'\[/?[^\]]+\]')
                 tokenList = re.findall( tagString, baseText)
     
                 for token in tokenList:
@@ -381,7 +381,7 @@ class InternationalizedDescriptor(threading.Thread):
                     
                     # baseText starts out as the original text.  We will be systematically replacing the tokens with
                     #    a standard seperator so that later on we can parse the string based on the location of the tokens.
-                    reToken = '\[' + trimmedTokenName + '\]'
+                    reToken = r'\[' + trimmedTokenName + r'\]'
                     tokenReplacement = re.compile(reToken)
                     baseText = tokenReplacement.sub( '<>', baseText, count=1)
                 
@@ -398,11 +398,11 @@ class InternationalizedDescriptor(threading.Thread):
                 i=0
                 interleavedList = []
                 for textFragment in textList:
-                    Graph.api.writeDebug( '%s Interleave Step = %s.  textFragment= %s' % (method, i, textFragment))
+                    Graph.api.writeDebug( f'{method} Interleave Step = {i}.  textFragment= {textFragment}')
                     interleavedList.append(textFragment)
                     try:
                         if tokenList[i] is not None:
-                            Graph.api.writeDebug( '%s We are within the boundary of the tokenlist.' %method)
+                            Graph.api.writeDebug( f'{method} We are within the boundary of the tokenlist.')
                             
                             #Again, leading and trailing brackets must be trimmed
                             tokenToBeTrimmed = tokenList[i]
@@ -412,20 +412,20 @@ class InternationalizedDescriptor(threading.Thread):
                             try:
                                 addMe = simpleTokenSet[trimmedTokenName]
                                 interleavedList.append(addMe)
-                                Graph.api.writeDebug( '%s %s is of type = %s' % (method, addMe, type(addMe)))
-                                Graph.api.writeDebug( '%s Tag %s is in the simple token set.  argument = %s' % (method, trimmedTokenName, addMe))
+                                Graph.api.writeDebug( f'{method} {addMe} is of type = {type(addMe)}')
+                                Graph.api.writeDebug( f'{method} Tag {trimmedTokenName} is in the simple token set.  argument = {addMe}')
                             except: 
-                                Graph.api.writeDebug( '%s Nothing for tag %s in the simple token set' %(method, trimmedTokenName))
+                                Graph.api.writeDebug( f'{method} Nothing for tag {trimmedTokenName} in the simple token set')
                             try:
                                 addMe = complexTokenSet[trimmedTokenName]
                                 interleavedList.append(addMe)
-                                Graph.api.writeDebug( '%s %s is of type = %s' % (method, addMe, type(addMe)))
-                                Graph.api.writeDebug( '%s Tag %s is in the simple token set.  token ID = %s' % (method, trimmedTokenName, addMe))
+                                Graph.api.writeDebug( f'{method} {addMe} is of type = {type(addMe)}')
+                                Graph.api.writeDebug( f'{method} Tag {trimmedTokenName} is in the simple token set.  token ID = {addMe}')
                             except:
-                                Graph.api.writeDebug( '%s Nothing for tag %s in the complex token set' %(method, trimmedTokenName))
+                                Graph.api.writeDebug( f'{method} Nothing for tag {trimmedTokenName} in the complex token set')
                     except:
                         # don't worry about an exception here.  We'll always overstep tokenList on the last pass.
-                        Graph.api.writeDebug( '%s We have gone past the boundary of the tokenlist on pass %s' %(method, (i)))
+                        Graph.api.writeDebug( f'{method} We have gone past the boundary of the tokenlist on pass {i}')
                     i=i+1
         
                 #Graph.api.writeDebug( '%s The interleaved token list is %s' %(method, interleavedList))
@@ -439,12 +439,12 @@ class InternationalizedDescriptor(threading.Thread):
                 dummyVariable = "me"
         except Exception as e:
             memeType = Graph.api.getEntityMemeType(self.descriptorContainerUUID)
-            errorMsg = "Failed to add executor object to Internationalized Descriptor %s.  Traceback = %s" %(memeType, e)
+            errorMsg = f"Failed to add executor object to Internationalized Descriptor {memeType}.  Traceback = {e}"
             Graph.api.writeError(errorMsg)
             #debug
             self.addDescriptor()
             #/debug
-        Graph.api.writeLog("Exiting %s" %method)
+        Graph.api.writeLog(f"Exiting {method}")
         
 
 
@@ -455,10 +455,10 @@ class LocalizedDescriptor(threading.Thread):
     
     def __init__(self, fragmentList, language):
         method = module + '.' +  self.className + '.__init__'
-        Graph.api.writeLog("Entering %s" %method)
+        Graph.api.writeLog(f"Entering {method}")
         self.fragmentList = fragmentList
         self.language = language
-        Graph.api.writeLog("Exiting %s" %method)
+        Graph.api.writeLog(f"Exiting {method}")
 
                 
     def execute(self, entityID, rtParams):
@@ -470,13 +470,13 @@ class LocalizedDescriptor(threading.Thread):
         """
         
         method = module + '.' +  self.className + '.execute'
-        Graph.api.writeLog("Entering %s" %method)
+        Graph.api.writeLog(f"Entering {method}")
         
         actionID = rtParams["actionID"]
         subjectID = rtParams["subjectID"]
                                   
         method = module + '.' +  self.className + '.execute'
-        Graph.api.writeLog("Entering %s" %method)
+        Graph.api.writeLog(f"Entering {method}")
         
         returnString = ''
         insertValue = None
@@ -499,7 +499,7 @@ class LocalizedDescriptor(threading.Thread):
                 returnString = returnString + insertValue
                 #Graph.api.writeDebug( "%s Text buildup at step %s = %s" % (method, unicode(nth), returnString))
             except Exception as e:
-                errorMsg = "%s Error building text at stepat step %s.  Traceback = %s" % (method, str(nth), e)
+                errorMsg = f"{method} Error building text at stepat step {str(nth)}.  Traceback = {e}"
                 Graph.api.writeError(errorMsg)
                 try:
                     if isinstance(step, SimpleArgument):
@@ -512,7 +512,7 @@ class LocalizedDescriptor(threading.Thread):
                 except:
                     pass
             
-        Graph.api.writeLog("Exiting %s" %method)
+        Graph.api.writeLog(f"Exiting {method}")
         return returnString        
         
 
@@ -544,7 +544,7 @@ class InitInternationalizedDescriptor(Graphyne.Scripting.StateEventScript):
             descriptorContainerUUID = descriptorContainerEntry
 
         if descriptorContainerUUID is None:
-            warningMsg = "Internationalized Descriptor Meme %s has no parent Stimulus.Descriptor assigned." %descriptorEntity.memePath.fullTemplatePath
+            warningMsg = f"Internationalized Descriptor Meme {descriptorEntity.memePath.fullTemplatePath} has no parent Stimulus.Descriptor assigned."
             Graph.api.writeError(warningMsg)
         else:
             uuidAsStr = str(descriptorContainerUUID)
@@ -555,10 +555,10 @@ class InitInternationalizedDescriptor(Graphyne.Scripting.StateEventScript):
                 internationalizedDescriptor.addDescriptor()
                 internationalizedDescriptor.assignDevLanguage(devLanguage)
                 Graph.api.installPythonExecutor(descriptorContainerUUID, internationalizedDescriptor)
-                logStatement = "Added executor object to Internationalized Descriptor %s" %(uuidAsStr)
+                logStatement = f"Added executor object to Internationalized Descriptor {uuidAsStr}"
                 Graph.api.writeLog(logStatement)
             except Exception as e:
-                errorMsg = "Failed to add executor object to Internationalized Descriptor %s.  Traceback = %s" %(uuidAsStr,e)
+                errorMsg = f"Failed to add executor object to Internationalized Descriptor {uuidAsStr}.  Traceback = {e}"
                 Graph.api.writeError(errorMsg)
                 
                 

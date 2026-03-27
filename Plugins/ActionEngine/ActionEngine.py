@@ -9,6 +9,7 @@ import copy
 import queue
 import time
 import sys
+from enum import IntEnum
 #from collections import deque
 
 import Graphyne.Graph as Graph
@@ -20,26 +21,27 @@ from . import Action
 #import pydevd
 
 
-class WorkerTerminationRequestStep(object):
+class WorkerTerminationRequestStep(IntEnum):
+    """Steps in the worker thread termination process."""
     START = 0
     ROLLBACK = 1
     COMMIT = 2
-    
-    
-class WorkerTerminationVerificationMessage(object):
+
+
+class WorkerTerminationVerificationMessage(IntEnum):
+    """Verification messages for worker thread termination."""
     COMMIT = 0
     ROLLBACK = 1
     ERROR = 2
-    
-    
-    
+
+
 #globals
 moduleName = 'ActionEngine.ActionEngine'
 logType = Graph.logTypes.CONTENT
-logLevel = Graph.LogLevel()
-terminationSteps = WorkerTerminationRequestStep()
-terminationVerificationMsg = WorkerTerminationVerificationMessage()
-actionInsertionTypes = Engine.ActionInsertionType()
+logLevel = Graph.LogLevel
+terminationSteps = WorkerTerminationRequestStep
+terminationVerificationMsg = WorkerTerminationVerificationMessage
+actionInsertionTypes = Engine.ActionInsertionType
 
 
 
@@ -66,7 +68,7 @@ class Plugin(Engine.ServicePlugin):
             self._sleepperiod = 0.03
             threading.Thread.__init__(self, name = rtParams['moduleName'])
         except Exception as e:
-            errorMsg = "Fatal Error while starting Action Engine. Traceback = %s" %e
+            errorMsg = f"Fatal Error while starting Action Engine. Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.ERROR , method , errorMsg])
         
         #Graph.logQ.put( [logType , logLevel.DEBUG , method , "exiting"])
@@ -151,11 +153,11 @@ class Plugin(Engine.ServicePlugin):
                                     actionInvocation.objectID, \
                                     actionInvocation.subjectID, \
                                     actionInvocation.rtParams]  
-                errorMsg = "Unindexed action %s requested by controller %s. Security log message generated." %(actionInvocation.actionMeme.fullTemplatePath, actionInvocation.controllerID)
+                errorMsg = f"Unindexed action {actionInvocation.actionMeme.fullTemplatePath} requested by controller {actionInvocation.controllerID}. Security log message generated."
                 Graph.logQ.put( [logType , logLevel.WARNING , method, errorMsg])
                 Engine.securityLogQ.put(securityMessage)
             except Exception as e:
-                errorMsg = "unknown error during action copy and instance ID refresh. Traceback = %s" %e
+                errorMsg = f"unknown error during action copy and instance ID refresh. Traceback = {e}"
                 Graph.logQ.put( [logType , logLevel.ERROR , method, errorMsg])
                 raise e
             
@@ -206,18 +208,18 @@ class Plugin(Engine.ServicePlugin):
                     worker.start()
                     self.workerQueues[actionInvocation.masterLandmarkUUID] = worker
                 except Exception as e:
-                    actionInfo = "actionID = %s,  subjectID = %s,  controllerID = %s, objectID = %s" %(actionInvocation.actionMeme, actionInvocation.subjectID, actionInvocation.controllerID, actionInvocation.objectID)
-                    Graph.logQ.put( [logType , logLevel.WARNING , method , "Unknown error trying to broker action: %s, Traceback = %s " %(actionInfo, e)])
+                    actionInfo = f"actionID = {actionInvocation.actionMeme},  subjectID = {actionInvocation.subjectID},  controllerID = {actionInvocation.controllerID}, objectID = {actionInvocation.objectID}"
+                    Graph.logQ.put( [logType , logLevel.WARNING , method , f"Unknown error trying to broker action: {actionInfo}, Traceback = {e} "])
 
         except AssertionError:
             #Laglog candidate
-            errorMsg = "Unknown Action Request: Controller = %s, subjectID = %s, actionID = %s" %(actionInvocation.controllerID, actionInvocation.subjectID, actionInvocation.actionMeme.fullTemplatePath)
+            errorMsg = f"Unknown Action Request: Controller = {actionInvocation.controllerID}, subjectID = {actionInvocation.subjectID}, actionID = {actionInvocation.actionMeme.fullTemplatePath}"
             Graph.logQ.put( [logType , logLevel.ERROR , method, errorMsg])
         except Exceptions.UnknownAction as e:
             Graph.logQ.put( [logType , logLevel.WARNING , method , e]) 
         except Exception as e:
-                actionInfo = "actionID = %s,  subjectID = %s,  controllerID = %s, objectID = %s" %(actionInvocation.actionMeme, actionInvocation.subjectID, actionInvocation.controllerID, actionInvocation.objectID)
-                Graph.logQ.put( [logType , logLevel.WARNING , method , "Unknown error trying to pre-broker action: %s, Traceback = %s " %(actionInfo, e)])
+                actionInfo = f"actionID = {actionInvocation.actionMeme},  subjectID = {actionInvocation.subjectID},  controllerID = {actionInvocation.controllerID}, objectID = {actionInvocation.objectID}"
+                Graph.logQ.put( [logType , logLevel.WARNING , method , f"Unknown error trying to pre-broker action: {actionInfo}, Traceback = {e} "])
 
             
             
@@ -245,7 +247,7 @@ class Plugin(Engine.ServicePlugin):
                         respondToWorkerQueue.put(terminationVerificationMsg.COMMIT)
                         self.deleteQueues(worker.queueID)
                 except Exception as e:
-                    Graph.logQ.put( [logType , logLevel.ERROR , method , "Unknown error on start closure of worker thread for landmark queue %s.  Traceback = %s" %(worker.queueID, e)])
+                    Graph.logQ.put( [logType , logLevel.ERROR , method , f"Unknown error on start closure of worker thread for landmark queue {worker.queueID}.  Traceback = {e}"])
                     respondToWorkerQueue.put(terminationVerificationMsg.COMMIT)
                     self.deleteQueues(worker.queueID)
     
@@ -261,18 +263,18 @@ class Plugin(Engine.ServicePlugin):
                 except AssertionError:
                     try:
                         assert worker.queueID in self.workerQueues
-                        Graph.logQ.put( [logType , logLevel.ERROR , method , "Disallowed request to rollback closure of worker thread for landmark queue %s because it is currently indexed as an active thread!" %(worker.queueID)])
+                        Graph.logQ.put( [logType , logLevel.ERROR , method , f"Disallowed request to rollback closure of worker thread for landmark queue {worker.queueID} because it is currently indexed as an active thread!"])
                         respondToWorkerQueue.put(terminationVerificationMsg.COMMIT)
                         self.deleteQueues(worker.queueID)
                     except AssertionError:
                         respondToWorkerQueue.put(terminationVerificationMsg.ROLLBACK)
                 except Exception as e:
                     try:
-                        Graph.logQ.put( [logType , logLevel.ERROR , method , "Disallowed request to rollback closure of depricated worker thread for landmark queue %s.  Traceback = %s" %(worker.queueID, e)])
+                        Graph.logQ.put( [logType , logLevel.ERROR , method , f"Disallowed request to rollback closure of depricated worker thread for landmark queue {worker.queueID}.  Traceback = {e}"])
                         respondToWorkerQueue.put(terminationVerificationMsg.ERROR)
                         self.deleteQueues(worker.queueID)
                     except Exception as e2:
-                        Graph.logQ.put( [logType , logLevel.ERROR , method , "Syntax error in request to rollback closure of depricated worker thread for landmark queue.  Request structure should be [<workerthread>, 1].  Was actually %s.  Traceback = %s  %s." %(request, e2, e)])
+                        Graph.logQ.put( [logType , logLevel.ERROR , method , f"Syntax error in request to rollback closure of depricated worker thread for landmark queue.  Request structure should be [<workerthread>, 1].  Was actually {request}.  Traceback = {e2}  {e}."])
                         respondToWorkerQueue.put(terminationVerificationMsg.ERROR)
                         self.deleteQueues(worker.queueID)
             else:
@@ -289,7 +291,7 @@ class Plugin(Engine.ServicePlugin):
                             respondToWorkerQueue.put(terminationVerificationMsg.COMMIT)
                             self.deleteQueues(worker.queueID)
                         except AssertionError:
-                            Graph.logQ.put( [logType , logLevel.ERROR , method , "Disallowed request to finalize closure of depricated worker thread for landmark queue %s because it is neither indexed as an active or depricated thread!" %(worker.queueID)])
+                            Graph.logQ.put( [logType , logLevel.ERROR , method , f"Disallowed request to finalize closure of depricated worker thread for landmark queue {worker.queueID} because it is neither indexed as an active or depricated thread!"])
                             respondToWorkerQueue.put(terminationVerificationMsg.COMMIT)    
                             self.deleteQueues(worker.queueID)                    
                     else:
@@ -308,27 +310,27 @@ class Plugin(Engine.ServicePlugin):
                             respondToWorkerQueue.put(terminationVerificationMsg.COMMIT)
                         except Exception as e:
                             try:
-                                Graph.logQ.put( [logType , logLevel.ERROR , method , "Problematic request to finalize closure of depricated worker thread for landmark queue %s.  Traceback = %s" %(worker.queueID, e)])
+                                Graph.logQ.put( [logType , logLevel.ERROR , method , f"Problematic request to finalize closure of depricated worker thread for landmark queue {worker.queueID}.  Traceback = {e}"])
                                 respondToWorkerQueue.put(terminationVerificationMsg.ERROR)
                                 self.deleteQueues(worker.queueID)
                             except Exception as e2:
-                                Graph.logQ.put( [logType , logLevel.ERROR , method , "Syntax error in request to finalize closure of depricated worker thread for landmark queue.  Request structure should be [<workerthread>, 1].  Was actually %s.  Traceback = %s  %s." %(request, e2, e)])
+                                Graph.logQ.put( [logType , logLevel.ERROR , method , f"Syntax error in request to finalize closure of depricated worker thread for landmark queue.  Request structure should be [<workerthread>, 1].  Was actually {request}.  Traceback = {e2}  {e}."])
                                 respondToWorkerQueue.put(terminationVerificationMsg.ERROR)
                                 self.deleteQueues(worker.queueID)
                 except AssertionError:
                     try:
                         assert worker.queueID in self.workerQueues
-                        Graph.logQ.put( [logType , logLevel.ERROR , method , "Disallowed request to finalize closure of worker thread for landmark queue %s because it is currently indexed as an active thread!" %(worker.queueID)])
+                        Graph.logQ.put( [logType , logLevel.ERROR , method , f"Disallowed request to finalize closure of worker thread for landmark queue {worker.queueID} because it is currently indexed as an active thread!"])
                         respondToWorkerQueue.put(terminationVerificationMsg.COMMIT)
                         self.deleteQueues(worker.queueID)
                     except AssertionError:
-                        Graph.logQ.put( [logType , logLevel.ERROR , method , "Disallowed request to finalize closure of depricated worker thread for landmark queue %s because it is neither indexed as an active or depricated thread!" %(worker.queueID)])
+                        Graph.logQ.put( [logType , logLevel.ERROR , method , f"Disallowed request to finalize closure of depricated worker thread for landmark queue {worker.queueID} because it is neither indexed as an active or depricated thread!"])
                         respondToWorkerQueue.put(terminationVerificationMsg.ERROR) 
                         self.deleteQueues(worker.queueID)                       
         except queue.Empty:
             respondToWorkerQueue.put(True)
         except Exception as e:
-            Graph.logQ.put( [logType , logLevel.ERROR , method , "Unknown error trying to manage worker thread. Traceback = %s " %(e)])
+            Graph.logQ.put( [logType , logLevel.ERROR , method , f"Unknown error trying to manage worker thread. Traceback = {e} "])
   
         
             
@@ -376,10 +378,10 @@ class Plugin(Engine.ServicePlugin):
                 workerToBeTerminated = self.workerQueues[workerKey]
                 workerToBeTerminated.join(0.5)
                 workerCount = workerCount + 1
-                Graph.logQ.put( [logType , logLevel.DEBUG , method , "......terminated worker thread for action queue %s" %(workerKey)])
+                Graph.logQ.put( [logType , logLevel.DEBUG , method , f"......terminated worker thread for action queue {workerKey}"])
             except Exception as e:
-                Graph.logQ.put( [logType , logLevel.ERROR , method , "...Problem trying to terminate worker thread %s.  Traceback = %s" %(workerKey, e)])
-        Graph.logQ.put( [logType , logLevel.INFO , method , "...terminated %s active workers" %(workerCount)])
+                Graph.logQ.put( [logType , logLevel.ERROR , method , f"...Problem trying to terminate worker thread {workerKey}.  Traceback = {e}"])
+        Graph.logQ.put( [logType , logLevel.INFO , method , f"...terminated {workerCount} active workers"])
         Graph.logQ.put( [logType , logLevel.ADMIN , method , "...finished terminating workers"])
         
         Graph.logQ.put( [logType , logLevel.ADMIN , method , "...shutting down indexer"])
@@ -441,7 +443,7 @@ class WorkerThread(threading.Thread):
                     #nothing to do.we have broken out of the termination
                     pass
             except Exception as e:
-                Graph.logQ.put( [logType , logLevel.ERROR , method , "Error popping action from worker dQueue %s.  Clearing Queue.  Traceback = %s" %(actionInvocation, e)])
+                Graph.logQ.put( [logType , logLevel.ERROR , method , f"Error popping action from worker dQueue {actionInvocation}.  Clearing Queue.  Traceback = {e}"])
                 self.dQueue.empty()
                 
             
@@ -486,7 +488,7 @@ class WorkerThread(threading.Thread):
                         if landmarksOK == True:
                             actionSetKeyframes = []
                             #debug
-                            debugMessage = "%s is an ActionSet" %actionInvocation.actionMeme.fullTemplatePath
+                            debugMessage = f"{actionInvocation.actionMeme.fullTemplatePath} is an ActionSet"
                             Graph.logQ.put( [logType , logLevel.DEBUG , method , debugMessage])
                             memenames = []
                             actionSetChildren = self.script.getLinkCounterpartsByMetaMemeType(actionInvocation.action.uuid, "Action.ChoreographyStep", None, False)
@@ -495,7 +497,7 @@ class WorkerThread(threading.Thread):
                                     memenames.append(actionSetChild)
                                 except:
                                     pass
-                            debugMessage = "ActionSet %s has members: %s" %(actionInvocation.actionMeme.fullTemplatePath, memenames)
+                            debugMessage = f"ActionSet {actionInvocation.actionMeme.fullTemplatePath} has members: {memenames}"
                             Graph.logQ.put( [logType , logLevel.DEBUG , method , debugMessage])
                             #/debug
                             
@@ -527,11 +529,11 @@ class WorkerThread(threading.Thread):
                                                             actionSetKeyframe.objectID, \
                                                             actionSetKeyframe.subjectID, \
                                                             actionSetKeyframe.rtParams]  
-                                        errorMsg = "Unindexed action %s requested by controller %s. Security log message generated." %(actionSetKeyframe.actionMeme.fullTemplatePath, actionSetKeyframe.controllerID)
+                                        errorMsg = f"Unindexed action {actionSetKeyframe.actionMeme.fullTemplatePath} requested by controller {actionSetKeyframe.controllerID}. Security log message generated."
                                         Graph.logQ.put( [logType , logLevel.WARNING , method, errorMsg])
                                         Engine.securityLogQ.put(securityMessage)
                                     except Exception as e:
-                                        errorMsg = "unknown error during action copy and instance ID refresh. Traceback = %s" %e
+                                        errorMsg = f"unknown error during action copy and instance ID refresh. Traceback = {e}"
                                         Graph.logQ.put( [logType , logLevel.ERROR , method, errorMsg])
                                         raise e
                                     
@@ -542,19 +544,19 @@ class WorkerThread(threading.Thread):
                                     #self.dQueue.appendleft(actionSetKeyframe)
                                     self.dQueue.put_nowait(actionSetKeyframe)
                                     #debug
-                                    debugMessage = "posting choreography %s member %s to action queue" %(actionInvocation.actionMeme.fullTemplatePath, actionSetKeyframe.actionMeme.fullTemplatePath)
+                                    debugMessage = f"posting choreography {actionInvocation.actionMeme.fullTemplatePath} member {actionSetKeyframe.actionMeme.fullTemplatePath} to action queue"
                                     Graph.logQ.put( [logType , logLevel.DEBUG , method , debugMessage])
                                     #/debug 
                                     
                                 except AssertionError:
                                     #Laglog candidate
-                                    errorMsg = "Unknown Action Request: Controller = %s, subjectID = %s, actionID = %s" %(actionSetKeyframe.controllerID, actionSetKeyframe.subjectID, actionSetKeyframe.actionMeme.fullTemplatePath)
+                                    errorMsg = f"Unknown Action Request: Controller = {actionSetKeyframe.controllerID}, subjectID = {actionSetKeyframe.subjectID}, actionID = {actionSetKeyframe.actionMeme.fullTemplatePath}"
                                     Graph.logQ.put( [logType , logLevel.ERROR , method, errorMsg])
                                 except Exceptions.UnknownAction as e:
                                     Graph.logQ.put( [logType , logLevel.WARNING , method , e]) 
                                 except Exception as e:
-                                        actionInfo = "actionID = %s,  subjectID = %s,  controllerID = %s, objectID = %s" %(actionSetKeyframe.actionMeme, actionSetKeyframe.subjectID, actionSetKeyframe.controllerID, actionSetKeyframe.objectID)
-                                        Graph.logQ.put( [logType , logLevel.WARNING , method , "Unknown error trying to pre-broker action: %s, Traceback = %s " %(actionInfo, e)])                           
+                                        actionInfo = f"actionID = {actionSetKeyframe.actionMeme},  subjectID = {actionSetKeyframe.subjectID},  controllerID = {actionSetKeyframe.controllerID}, objectID = {actionSetKeyframe.objectID}"
+                                        Graph.logQ.put( [logType , logLevel.WARNING , method , f"Unknown error trying to pre-broker action: {actionInfo}, Traceback = {e} "])                           
                     elif type(testCatch) == type(actionInvocation.action):
                         pass  # only react on catch inside of catchQueueException() 
                     elif type(testThrow) == type(actionInvocation.action):
@@ -577,7 +579,7 @@ class WorkerThread(threading.Thread):
                                 errorID = str(fullerror[0])
                                 #tb = sys.exc_info()[2]
                                 #raise Exceptions.ScriptError(ex).with_traceback(tb)
-                                errorMsg = "Uncaught exception [%s] occurred while processing keyframe %s from controller %s.  Traceback = %s" %(errorID, actionInvocation.actionMeme.fullTemplatePath, actionInvocation.controllerID, errorMsg)
+                                errorMsg = f"Uncaught exception [{errorID}] occurred while processing keyframe {actionInvocation.actionMeme.fullTemplatePath} from controller {actionInvocation.controllerID}.  Traceback = {errorMsg}"
                                 Graph.logQ.put( [logType , logLevel.ERROR , method , errorMsg])
             except IndexError as e:
                 dummyErrorMsg = e
@@ -591,7 +593,7 @@ class WorkerThread(threading.Thread):
             except AttributeError as e:
                 #debug
                 '''
-                debugMessage = "%s is an ActionSet" %actionInvocation.actionMeme
+                debugMessage = f"{actionInvocation.actionMeme} is an ActionSet"
                 Graph.logQ.put( [logType , logLevel.DEBUG , method , debugMessage])
                 memenames = []
                 actionSetChildren = self.script.getLinkCounterpartsByMetaMemeType(actionInvocation.action.uuid, "Action.ChoreographyStep")
@@ -608,7 +610,7 @@ class WorkerThread(threading.Thread):
                         actionSubInvocation = Engine.ActionRequest(taskItem, actionInsertionTypes.HEAD, actionInvocation.rtParams, actionInvocation.subjectID, actionInvocation.objectID, actionInvocation.controllerID)
                         actionSetKeyframes.append(actionSubInvocation)
                         #debug
-                        debugMessage = "posting choreography member %s %s to action queue" %(actionInvocation.actionMeme, actionSubInvocation.actionMeme)
+                        debugMessage = f"posting choreography member {actionInvocation.actionMeme} {actionSubInvocation.actionMeme} to action queue"
                         Graph.logQ.put( [logType , logLevel.DEBUG , method , debugMessage])
                         #/debug 
                 elif type(testKeyFrame) == type(actionInvocation.action):
@@ -619,15 +621,15 @@ class WorkerThread(threading.Thread):
                     Engine.aQ.put(actionSetKeyframe)
                 #debug
                 '''
-                errorMsg = "Unregistered Action: actionID = %s,  subjectID = %s,  controllerID = %s, objectID = %s.  Traceback = %s" %(actionInvocation.actionMeme, actionInvocation.subjectID, actionInvocation.controllerID, actionInvocation.objectID,e)
+                errorMsg = f"Unregistered Action: actionID = {actionInvocation.actionMeme},  subjectID = {actionInvocation.subjectID},  controllerID = {actionInvocation.controllerID}, objectID = {actionInvocation.objectID}.  Traceback = {e}"
                 Graph.logQ.put( [logType , logLevel.ERROR , method , errorMsg])
             except Exception as e:
                 fullerror = sys.exc_info()
                 errorMsg = str(fullerror[1])
                 errorID = str(fullerror[0])
-                errorMsg = "Uncaught exception [%s] occurred while processing action queue %s.  Traceback = %e" %(errorID, actionInvocation, errorMsg)
+                errorMsg = f"Uncaught exception [{errorID}] occurred while processing action queue {actionInvocation}.  Traceback = %e"
                 Graph.logQ.put( [logType , logLevel.ERROR , method , errorMsg])
-                Graph.logQ.put( [logType , logLevel.ERROR , method , "Unknown error processing action queue %s.  Traceback = %s" %(actionInvocation, e)])
+                Graph.logQ.put( [logType , logLevel.ERROR , method , f"Unknown error processing action queue {actionInvocation}.  Traceback = {e}"])
                 try:
                     self.shutdown()
                 except Exceptions.WorkerThreadTerminationRollback:
@@ -646,12 +648,12 @@ class WorkerThread(threading.Thread):
                 nextTaskMeme = nextTask.actionMeme.fullTemplatePath
                 if nextTaskType == 'Catch':
                     #Todo: lagLog
-                    logMessage = "%s cleared action %s from action engine worker queue %s.  Subject = %s, Object = %s.  Action is catch.  Queue clearing halted." %(method, nextTask.actionMeme.fullTemplatePath, nextTask.actionID, nextTask.subjectID, nextTask.objectID)
+                    logMessage = f"{method} cleared action {nextTask.actionMeme.fullTemplatePath} from action engine worker queue {nextTask.actionID}.  Subject = {nextTask.subjectID}, Object = {nextTask.objectID}.  Action is catch.  Queue clearing halted."
                     Graph.logQ.put( [logType , logLevel.DEBUG , method , logMessage])
                     break
                 else:
                     #Todo: lagLog
-                    logMessage = "%s cleared action %s from action engine worker queue %s.  Subject = %s, Object = %s.  Action is not a catch and the queue will continue to be cleared." %(method, nextTask.actionMeme.fullTemplatePath, nextTask.actionID, nextTask.subjectID, nextTask.objectID)
+                    logMessage = f"{method} cleared action {nextTask.actionMeme.fullTemplatePath} from action engine worker queue {nextTask.actionID}.  Subject = {nextTask.subjectID}, Object = {nextTask.objectID}.  Action is not a catch and the queue will continue to be cleared."
                     Graph.logQ.put( [logType , logLevel.DEBUG , method , logMessage])
         except queue.Empty as e:
             #we have an empty dQueue and are not awaiting a any unpacked keyframes.  Go ahead and start shutting down
@@ -661,7 +663,7 @@ class WorkerThread(threading.Thread):
                 #nothing to do.we have broken out of the termination
                 pass
         except Exception as e:
-            Graph.logQ.put( [logType , logLevel.ERROR , method , "Error popping action from worker dQueue %s.  Clearing Queue.  Traceback = %s" %(self.__name, e)])
+            Graph.logQ.put( [logType , logLevel.ERROR , method , f"Error popping action from worker dQueue {self.__name}.  Clearing Queue.  Traceback = {e}"])
             self.dQueue.empty()
         
         
@@ -687,9 +689,9 @@ class WorkerThread(threading.Thread):
                     #debug
                     landmarksOK = actionInvocation.action.checkLandmarks(self.script, actionInvocation.subjectID, actionInvocation.decoratingLandmarks)
                     #/debug
-                    errorMsg = "Landmarks Invalid for action %s by subject %s.  " %(actionMeme, subjectMeme)
+                    errorMsg = f"Landmarks Invalid for action {actionMeme} by subject {subjectMeme}.  "
                 if (conditionsOK == False):
-                    errorMsg = "Conditions Invalid for action %s by subject %s.  " %(actionMeme, subjectMeme)
+                    errorMsg = f"Conditions Invalid for action {actionMeme} by subject {subjectMeme}.  "
                 raise Exceptions.ActionKeyframeExecutionError(errorMsg)
             
             startTime = time.time()
@@ -703,7 +705,7 @@ class WorkerThread(threading.Thread):
                 #rtParams, subjectID, controllerID, objectIDs
                 actionInvocation.action.invoke(self.script, actionInvocation.rtParams)
             except Exception as e:
-                errorMsg = "Error while invoking script on keyframe %s on landmark %s.  Subject = %s, object = %s  Traceback = %s" %(actionInvocation.actionMeme, self.queueID, actionInvocation.subjectID, actionInvocation.objectID, e)
+                errorMsg = f"Error while invoking script on keyframe {actionInvocation.actionMeme} on landmark {self.queueID}.  Subject = {actionInvocation.subjectID}, object = {actionInvocation.objectID}  Traceback = {e}"
                 Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
                 raise Exceptions.ActionKeyframeExecutionError(e)
                         
@@ -728,7 +730,7 @@ class WorkerThread(threading.Thread):
             try:
                 objectMeme = self.script.getEntityMemeType(actionInvocation.objectID)
             except: pass
-            errorMsg = "Nested Exceptions.ActionKeyframeExecutionError Error while processing keyframe %s on landmark %s.  Subject = %s, object = %s  Traceback = %s" %(actionMeme, self.queueID, subjectMeme, objectMeme, e)
+            errorMsg = f"Nested Exceptions.ActionKeyframeExecutionError Error while processing keyframe {actionMeme} on landmark {self.queueID}.  Subject = {subjectMeme}, object = {objectMeme}  Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
             raise Exceptions.ActionKeyframeExecutionError(errorMsg) 
         except Exception as e:
@@ -744,7 +746,7 @@ class WorkerThread(threading.Thread):
             try:
                 objectMeme = self.script.getEntityMemeType(actionInvocation.objectID)
             except: pass
-            errorMsg = "Error while processing keyframe %s on landmark %s.  Subject = %s, object = %s  Traceback = %s" %(actionMeme, self.queueID, subjectMeme, objectMeme, e)
+            errorMsg = f"Error while processing keyframe {actionMeme} on landmark {self.queueID}.  Subject = {subjectMeme}, object = {objectMeme}  Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
             raise Exceptions.ActionKeyframeExecutionError(errorMsg)
             
@@ -779,7 +781,7 @@ class WorkerThread(threading.Thread):
                 self.finalizeShutdown(False)
                 raise SystemExit()
             except Exception as e:
-                errorMsg = "Abnormal termination start of worker thread %s, for landmark %s.  Traceback = %s" %(self._Thread__name, self.queueID, e)
+                errorMsg = f"Abnormal termination start of worker thread {self._Thread__name}, for landmark {self.queueID}.  Traceback = {e}"
                 Graph.logQ.put( [logType , logLevel.ERROR , method , errorMsg])
                 self.finalizeShutdown(False)
                 raise SystemExit(errorMsg)
@@ -815,12 +817,12 @@ class WorkerThread(threading.Thread):
                     #Roll back the termination
                     raise Exceptions.WorkerThreadTerminationRollback()
                 elif verification == terminationVerificationMsg.ERROR:
-                    errorMsg = "Worker thread for landmark %s is improperly indexed" %self.queueID
+                    errorMsg = f"Worker thread for landmark {self.queueID} is improperly indexed"
                     Graph.logQ.put( [logType , logLevel.ERROR , method , errorMsg])
                     raise Exceptions.WorkerThreadIndexError(errorMsg)
                 else:
                     #Should not happen
-                    errorMsg = "Unexpected shutdown verification response for worker thread on landmark %s" %self.queueID
+                    errorMsg = f"Unexpected shutdown verification response for worker thread on landmark {self.queueID}"
                     Graph.logQ.put( [logType , logLevel.ERROR , method , errorMsg])
                     raise Exceptions.WorkerThreadIndexError(errorMsg)
                 break
@@ -829,7 +831,7 @@ class WorkerThread(threading.Thread):
             except Exceptions.WorkerThreadTerminationRollback:
                 raise Exceptions.WorkerThreadTerminationRollback()
             except Exception as e:
-                errorMsg = "Unexpected error during shutdown verification process for worker thread on landmark %s.  Traceback= %s" %(self.queueID, e)
+                errorMsg = f"Unexpected error during shutdown verification process for worker thread on landmark {self.queueID}.  Traceback= {e}"
                 Graph.logQ.put( [logType , logLevel.ERROR , method , errorMsg])
                 raise e
             
@@ -847,7 +849,7 @@ class WorkerThread(threading.Thread):
             raise Exceptions.WorkerThreadTerminationRollback()
             # AE returned terminationVerificationMsg.ERROR
         except Exception as e:
-            errorMsg = "Abnormal termination commit of worker thread for landmark %s.  Traceback = %s" %(self.queueID, e)
+            errorMsg = f"Abnormal termination commit of worker thread for landmark {self.queueID}.  Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.ERROR , method , errorMsg])
             self._stopevent.set()
             raise SystemExit()
@@ -911,7 +913,7 @@ class ActionIndexer(threading.Thread):
                 repoEntries.append(entityID)
             
             numberOfEntities = len(repoEntries)
-            Graph.logQ.put( [logType , logLevel.INFO , moduleName + '.' + self.className + '.' + 'run'  , "Indexer has %s entities to check" %numberOfEntities])
+            Graph.logQ.put( [logType , logLevel.INFO , moduleName + '.' + self.className + '.' + 'run'  , f"Indexer has {numberOfEntities} entities to check"])
             #Now filter this list down to ones with "Action.Action" in their taxonomy
             fullMetamemeTaxonomyEntries = []
             nth = 1
@@ -922,29 +924,29 @@ class ActionIndexer(threading.Thread):
                     if "Action.Action" in fullMetamemeTaxonomy:
                         #Engine.actionIndexerQ.put(entityID)
                         fullMetamemeTaxonomyEntries.append(entityID)
-                    Graph.logQ.put( [logType , logLevel.INFO , moduleName + '.' + self.className + '.' + 'run'  , "Determined taxonomy on %s of %s entities" %(nth, numberOfEntities)])
+                    Graph.logQ.put( [logType , logLevel.INFO , moduleName + '.' + self.className + '.' + 'run'  , f"Determined taxonomy on {nth} of {numberOfEntities} entities"])
                     nth = nth + 1
                 except Exception as e:
-                    Graph.logQ.put( [logType , logLevel.ERROR , moduleName + '.' + self.className + '.' + 'run'  , "Unknown error indexing action %s.  Traceback = %s" %(entityID, e)])
+                    Graph.logQ.put( [logType , logLevel.ERROR , moduleName + '.' + self.className + '.' + 'run'  , f"Unknown error indexing action {entityID}.  Traceback = {e}"])
                   
             #Now index the actions
             numberOfActions = len(fullMetamemeTaxonomyEntries)  
-            Graph.logQ.put( [logType , logLevel.INFO , moduleName + '.' + self.className + '.' + 'run'  , "Indexer has %s actions to index" %numberOfActions])      
+            Graph.logQ.put( [logType , logLevel.INFO , moduleName + '.' + self.className + '.' + 'run'  , f"Indexer has {numberOfActions} actions to index"])      
             jth = 1
             for toBeIndexed in fullMetamemeTaxonomyEntries:
                 try:
                     self.indexItem(toBeIndexed)
-                    Graph.logQ.put( [logType , logLevel.INFO , moduleName + '.' + self.className + '.' + 'run'  , "Indexed %s of %s actions" %(jth, numberOfActions)])
+                    Graph.logQ.put( [logType , logLevel.INFO , moduleName + '.' + self.className + '.' + 'run'  , f"Indexed {jth} of {numberOfActions} actions"])
                     jth = jth + 1
                 except Exception as e:
-                    Graph.logQ.put( [logType , logLevel.ERROR , moduleName + '.' + self.className + '.' + 'run'  , "Unknown error indexing action %s.  Traceback = %s" %(entityID, e)])
+                    Graph.logQ.put( [logType , logLevel.ERROR , moduleName + '.' + self.className + '.' + 'run'  , f"Unknown error indexing action {entityID}.  Traceback = {e}"])
 
             
             endTime = time.time()
             deltaT = endTime - startTime
             self.startupStateActionsFinished = True
             Graph.logQ.put( [logType , logLevel.ADMIN , moduleName + '.' + self.className + '.' + 'run'  , "Action Indexer - Finished ad hoc load run"])
-            Graph.logQ.put( [logType , logLevel.ADMIN , moduleName + '.' + self.className + '.' + 'run'  , "Action Indexer - Indexed %s actions in %s seconds" %(len(fullMetamemeTaxonomyEntries), deltaT)])
+            Graph.logQ.put( [logType , logLevel.ADMIN , moduleName + '.' + self.className + '.' + 'run'  , f"Action Indexer - Indexed {len(fullMetamemeTaxonomyEntries)} actions in {deltaT} seconds"])
             Graph.logQ.put( [logType , logLevel.DEBUG , moduleName + '.' + self.className + '.' + 'run'  , "exiting"])
         else:
             #index off of the chosen queue
@@ -953,14 +955,14 @@ class ActionIndexer(threading.Thread):
             while self.isAlive():
                 try:
                     #toBeLogged = the memeID
-                    Graph.logQ.put( [logType , logLevel.DEBUG , moduleName + '.' + self.className + '.' + 'run'  , "Checking Action Indexer Q.  Current number of estimated workitems = %s" %(Engine.actionIndexerQ.qsize())])
+                    Graph.logQ.put( [logType , logLevel.DEBUG , moduleName + '.' + self.className + '.' + 'run'  , f"Checking Action Indexer Q.  Current number of estimated workitems = {Engine.actionIndexerQ.qsize()}"])
                     toBeIndexed = Engine.actionIndexerQ.get_nowait()
                     try:
-                        Graph.logQ.put( [logType , logLevel.DEBUG , moduleName + '.' + self.className + '.' + 'run'  , "Action Indexer off of the chosen queue - Index %s" %(toBeIndexed)])
+                        Graph.logQ.put( [logType , logLevel.DEBUG , moduleName + '.' + self.className + '.' + 'run'  , f"Action Indexer off of the chosen queue - Index {toBeIndexed}"])
                         self.indexItem(toBeIndexed)
                         nTh = nTh + 1
                     except Exception as e:
-                        Graph.logQ.put( [logType , logLevel.ERROR , moduleName + '.' + self.className + '.' + 'run'  , "Action Indexer - Problem indexing action %s.  Traceback = %s" %(toBeIndexed, e)])
+                        Graph.logQ.put( [logType , logLevel.ERROR , moduleName + '.' + self.className + '.' + 'run'  , f"Action Indexer - Problem indexing action {toBeIndexed}.  Traceback = {e}"])
                 except queue.Empty:
                     if finishedInitialIndexing == False:
                         finishedInitialIndexing = True
@@ -968,10 +970,10 @@ class ActionIndexer(threading.Thread):
                         deltaT = endTime - startTime
                         self.startupStateActionsFinished = True
                         Graph.logQ.put( [logType , logLevel.ADMIN , moduleName + '.' + self.className + '.' + 'run'  , "Action Indexer - Finished initial loading from engine action indexer queue"])
-                        Graph.logQ.put( [logType , logLevel.ADMIN , moduleName + '.' + self.className + '.' + 'run'  , "Action Indexer - Indexed %s actions in %s seconds" %(nTh, deltaT)])
+                        Graph.logQ.put( [logType , logLevel.ADMIN , moduleName + '.' + self.className + '.' + 'run'  , f"Action Indexer - Indexed {nTh} actions in {deltaT} seconds"])
                     self._stopevent.wait(self._sleepperiod)
                 except Exception as e:
-                    Graph.logQ.put( [logType , logLevel.ERROR , moduleName + '.' + self.className + '.' + 'run'  , "Action Indexer - Unknown Error.  Traceback = %s" %e])
+                    Graph.logQ.put( [logType , logLevel.ERROR , moduleName + '.' + self.className + '.' + 'run'  , f"Action Indexer - Unknown Error.  Traceback = {e}"])
                     self._stopevent.wait(self._sleepperiod)
                    
 
@@ -1005,15 +1007,15 @@ class ActionIndexer(threading.Thread):
             #Actions are indexed by meme path
             #self.registrar.actionIndex[action.meme] = action
             self.actionIndex[action.meme] = action
-            Graph.logQ.put( [logType , logLevel.INFO , method, "Indexed %s to action registrar" %action.meme])
+            Graph.logQ.put( [logType , logLevel.INFO , method, f"Indexed {action.meme} to action registrar"])
         except Exceptions.ScriptError as e:
             actionMeme = self.script.getEntityMemeType(toBeIndexed)
-            errorMsg = "Error indexing action %s %s.  Traceback = %s" %(actionMeme, toBeIndexed, e)
+            errorMsg = f"Error indexing action {actionMeme} {toBeIndexed}.  Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method, errorMsg])
             raise e
         except Exception as e:
             actionMeme = self.script.getEntityMemeType(toBeIndexed)
-            errorMsg = "Error indexing action %s %s.  Traceback = %s" %(actionMeme, toBeIndexed, e)
+            errorMsg = f"Error indexing action {actionMeme} {toBeIndexed}.  Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method, errorMsg])
             raise e
         finally:

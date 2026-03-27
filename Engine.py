@@ -13,58 +13,58 @@ import queue
 from os.path import expanduser
 import sys
 from types import ModuleType
+from enum import IntEnum
 
-import Graphyne.Graph as Graph
+import graphyne.Graph as Graph
 from . import Exceptions
 from Graphyne import Fileutils
 from Intentsity import PluginFacade
 
 
-class WorkerTerminationRequestStep(object):
-    def __init__(self):
-        self.START = 0
-        self.ROLLBACK = 1
-        self.COMMIT = 2
-    
-    
-class WorkerTerminationVerificationMessage(object):
-    def __init__(self):
-        self.COMMIT = 0
-        self.ROLLBACK = 1
-        self.ERROR = 2
+class WorkerTerminationRequestStep(IntEnum):
+    """Steps in the worker thread termination process."""
+    START = 0
+    ROLLBACK = 1
+    COMMIT = 2
 
 
-class StartupState(object):
-    def __init__(self):
-        self.INITIAL_STATE = 0
-        self.GRAPH_STARING = 1
-        self.INDEXING_MOLECULES = 3
-        self.STARTING_SERVICES = 3
-        self.READY_TO_SERVE = 4
-        self.FAILED_TO_START = 5
+class WorkerTerminationVerificationMessage(IntEnum):
+    """Verification messages for worker thread termination."""
+    COMMIT = 0
+    ROLLBACK = 1
+    ERROR = 2
 
-class ActionInsertionType(object):
-    def __init__(self):
-        self.APPEND = 0
-        self.HEAD = 1
-        self.HEAD_CLEAR = 2        
-        
 
-class LogLevel(object):
-    ''' Java style class to designate constants. ERROR = 0, WARNING = 1, INFO = 2 and ALL = -1.  '''
-    def __init__(self):
-        self.ERROR = 0
-        self.WARNING = 1
-        self.ADMIN = 2
-        self.INFO = 3
-        self.DEBUG = 4 
-        
-        
-class LogType(object):
-    ''' Java style class to designate constants. ERROR = 0, WARNING = 1, INFO = 2 and ALL = -1.  '''
-    def __init__(self):
-        self.ENGINE = 0
-        self.CONTENT = 1
+class StartupState(IntEnum):
+    """States during engine startup process."""
+    INITIAL_STATE = 0
+    GRAPH_STARING = 1
+    INDEXING_MOLECULES = 3
+    STARTING_SERVICES = 3
+    READY_TO_SERVE = 4
+    FAILED_TO_START = 5
+
+
+class ActionInsertionType(IntEnum):
+    """Types of action insertion into the execution queue."""
+    APPEND = 0
+    HEAD = 1
+    HEAD_CLEAR = 2
+
+
+class LogLevel(IntEnum):
+    """Logging levels: ERROR = 0, WARNING = 1, ADMIN = 2, INFO = 3, DEBUG = 4."""
+    ERROR = 0
+    WARNING = 1
+    ADMIN = 2
+    INFO = 3
+    DEBUG = 4
+
+
+class LogType(IntEnum):
+    """Logging types for different subsystems."""
+    ENGINE = 0
+    CONTENT = 1
         
         
 class Queues(object):
@@ -81,15 +81,15 @@ class Queues(object):
              
 
 api = None
-serverLanguage = 'en' 
-logTypes =  LogType() 
-logType = logTypes.ENGINE
-logLevel = LogLevel()
+serverLanguage = 'en'
+logTypes = LogType
+logType = LogType.ENGINE
+logLevel = LogLevel
 validateOnLoad = True
 renderStageStimuli = []
-terminationSteps = WorkerTerminationRequestStep()
-terminationVerificationMsg = WorkerTerminationVerificationMessage()
-actionInsertionTypes = ActionInsertionType()
+terminationSteps = WorkerTerminationRequestStep
+terminationVerificationMsg = WorkerTerminationVerificationMessage
+actionInsertionTypes = ActionInsertionType
 
 
 queues = Queues()
@@ -105,9 +105,9 @@ aQ = queue.Queue() # action queue
 siQ = queue.Queue()
 actionIndexerQ = queue.Queue()
 stimulusIndexerQ = queue.Queue()
-stagingQ = queue.Queue() 
-logType = LogType()
-logLevel = LogLevel()     
+stagingQ = queue.Queue()
+logType = LogType
+logLevel = LogLevel     
 
 
 #Startup State Queues
@@ -166,7 +166,7 @@ class ServicePlugin(threading.Thread):
             self.graphAPI = graphAPI
         except:
             self.queueName = None
-            errorMessage = "Possible Error: Plugin %s is unable acquire queue name from the configuration.  If it is supposed to have a queue, please check the configuration.  Otherwise Ignore!" %self.pluginName
+            errorMessage = f"Possible Error: Plugin {self.pluginName} is unable acquire queue name from the configuration.  If it is supposed to have a queue, please check the configuration.  Otherwise Ignore!"
             Graph.logQ.put( [logType , logLevel.ERROR , method , errorMessage])
         
         #Graph.logQ.put( [logType , logLevel.DEBUG , method , "exiting"])
@@ -238,12 +238,13 @@ class StimulusMessage(object):
         
 
 
-class LinkType(object):
+class LinkType(IntEnum):
+    """Types of links between entities."""
     ATOMIC = 0
     SUBATOMIC = 1
-    ALIAS = 2    
-    
-linkTypes = LinkType() 
+    ALIAS = 2
+
+linkTypes = LinkType 
 
 
 
@@ -270,12 +271,12 @@ class ControllerCatalog(object):
                 typeList.append(controller.uuid)
                 self.indexByType[controller.path.fullTemplatePath] = typeList
             else:
-                raise Exceptions.DuplicateControllerError ("Controller %s already in the controller catalog under the indexByType list" % controller.id)
+                raise Exceptions.DuplicateControllerError (f"Controller {controller.id} already in the controller catalog under the indexByType list")
             
             self.indexByID[controller.uuid] = controller
         else:
             #The controller already has an entry
-            raise Exceptions.DuplicateControllerError ("Controller %s already in the controller catalog" % controller.id)
+            raise Exceptions.DuplicateControllerError (f"Controller {controller.id} already in the controller catalog")
         #except Exception as e:
             #raise Exceptions.ControllerUpdateError(e)
         #Graph.logQ.put( [logType , logLevel.DEBUG , method , "exiting"])
@@ -294,11 +295,11 @@ class ControllerCatalog(object):
                     typeList.remove(controller.id)
                     self.indexByType[controller.templateName] = typeList
                 else:
-                    raise Exceptions.InvalidControllerError ("Controller %s in the controller catalog under the indexByID list, but not the indexByType list" % controller.id)
+                    raise Exceptions.InvalidControllerError (f"Controller {controller.id} in the controller catalog under the indexByID list, but not the indexByType list")
                 del self.indexByID[controller.id]'''
             else:
                 #The controller already has an entry
-                raise Exceptions.InvalidControllerError ("Controller %s is not in the controller catalog" % controllerID)
+                raise Exceptions.InvalidControllerError (f"Controller {controllerID} is not in the controller catalog")
         except Exception as e:
             raise Exceptions.ControllerUpdateError(e)
         #Graph.logQ.put( [logType , logLevel.DEBUG , method , "exiting"])
@@ -311,7 +312,7 @@ class ControllerCatalog(object):
         try:
             returnList = self.indexByType[controllerType]
         except Exception as e:
-            errorMsg = "Failed to find any controllers of type %s.  Traceback = %s" % (controllerType, e)
+            errorMsg = f"Failed to find any controllers of type {controllerType}.  Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
         #Graph.logQ.put( [logType , logLevel.DEBUG , method , "exiting"])
         return returnList   
@@ -352,9 +353,9 @@ class BroadcasterRegistrar(object):
                 badMemeType = Graph.api.getEntityMemeType(broadcasterID)
                 badMMType = Graph.api.getEntityMetaMemeType(broadcasterID)
                 if badMMType == "Agent.BroadcasterMM":
-                    errorMsg = "Inconsistent Broadcaster Configuration! %s registered in the graph as a valid broadcaster, but the corresponding queue is missing.  " %(badMemeType, badMMType)
+                    errorMsg = f"Inconsistent Broadcaster Configuration! {badMemeType} registered in the graph as a valid broadcaster, but the corresponding queue is missing.  "
                 else:
-                    errorMsg = "Invalid broadcast routing! Stimulus Engine attemting to send a resolved descriptor to broadcaster %s, but it is not a registered broadcaster.  It is a %s" %(badMemeType, badMMType)
+                    errorMsg = f"Invalid broadcast routing! Stimulus Engine attemting to send a resolved descriptor to broadcaster {badMemeType}, but it is not a registered broadcaster.  It is a {badMMType}"
                 raise Exceptions.NoSuchBroadcasterError(errorMsg)
             except Exceptions as e: 
                 raise e
@@ -532,11 +533,11 @@ class StimulusAPI(object):
                 pageIDList.extend(localPageIDListAn)
             else:
                 #seriously, we should never need to  throw this, but let's be defensive anyway
-                errorMsg = "StimulusScope methods take only the types Stimulus.Stimulus, Stimulus.ConditionalStimulus and Stimulus.StimulusChoice asarguments, not %s" %metamemeType
+                errorMsg = f"StimulusScope methods take only the types Stimulus.Stimulus, Stimulus.ConditionalStimulus and Stimulus.StimulusChoice asarguments, not {metamemeType}"
                 raise Exceptions.InvalidStimulusProcessingType(errorMsg)  
             return pageIDList
         except Exception as e:
-            errorMsg = "Unknown error selecting pages of stimulus %s.  Traceback = %s" %(stimulusID, e)
+            errorMsg = f"Unknown error selecting pages of stimulus {stimulusID}.  Traceback = {e}"
             raise Exceptions.ScriptError(errorMsg)
         
     
@@ -592,7 +593,7 @@ class ActionEngine(ServicePlugin):
             self._sleepperiod = 0.03
             threading.Thread.__init__(self, name = "ActionEngine")
         except Exception as e:
-            errorMsg = "Fatal Error while starting Action Engine. Traceback = %s" %e
+            errorMsg = f"Fatal Error while starting Action Engine. Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.ERROR , method , errorMsg])
         
         #Graph.logQ.put( [logType , logLevel.DEBUG , method , "exiting"])
@@ -679,11 +680,11 @@ class ActionEngine(ServicePlugin):
                                     actionInvocation.objectID, \
                                     actionInvocation.subjectID, \
                                     actionInvocation.rtParams]  
-                errorMsg = "Unindexed action %s requested by controller %s. Security log message generated." %(actionInvocation.actionMeme.fullTemplatePath, actionInvocation.controllerID)
+                errorMsg = f"Unindexed action {actionInvocation.actionMeme.fullTemplatePath} requested by controller {actionInvocation.controllerID}. Security log message generated."
                 Graph.logQ.put( [logType , logLevel.WARNING , method, errorMsg])
                 securityLogQ.put(securityMessage)
             except Exception as e:
-                errorMsg = "unknown error during action copy and instance ID refresh. Traceback = %s" %e
+                errorMsg = f"unknown error during action copy and instance ID refresh. Traceback = {e}"
                 Graph.logQ.put( [logType , logLevel.ERROR , method, errorMsg])
                 raise e
             
@@ -731,18 +732,18 @@ class ActionEngine(ServicePlugin):
                     worker.start()
                     self.workerQueues[actionInvocation.masterLandmarkUUID] = worker
                 except Exception as e:
-                    actionInfo = "actionID = %s,  subjectID = %s,  controllerID = %s, objectID = %s" %(actionInvocation.actionMeme, actionInvocation.subjectID, actionInvocation.controllerID, actionInvocation.objectID)
-                    Graph.logQ.put( [logType , logLevel.WARNING , method , "Unknown error trying to broker action: %s, Traceback = %s " %(actionInfo, e)])
+                    actionInfo = f"actionID = {actionInvocation.actionMeme},  subjectID = {actionInvocation.subjectID},  controllerID = {actionInvocation.controllerID}, objectID = {actionInvocation.objectID}"
+                    Graph.logQ.put( [logType , logLevel.WARNING , method , f"Unknown error trying to broker action: {actionInfo}, Traceback = {e} "])
 
         except AssertionError:
             #Laglog candidate
-            errorMsg = "Unknown Action Request: Controller = %s, subjectID = %s, actionID = %s" %(actionInvocation.controllerID, actionInvocation.subjectID, actionInvocation.actionMeme.fullTemplatePath)
+            errorMsg = f"Unknown Action Request: Controller = {actionInvocation.controllerID}, subjectID = {actionInvocation.subjectID}, actionID = {actionInvocation.actionMeme.fullTemplatePath}"
             Graph.logQ.put( [logType , logLevel.ERROR , method, errorMsg])
         except Exceptions.UnknownAction as e:
             Graph.logQ.put( [logType , logLevel.WARNING , method , e]) 
         except Exception as e:
-                actionInfo = "actionID = %s,  subjectID = %s,  controllerID = %s, objectID = %s" %(actionInvocation.actionMeme, actionInvocation.subjectID, actionInvocation.controllerID, actionInvocation.objectID)
-                Graph.logQ.put( [logType , logLevel.WARNING , method , "Unknown error trying to pre-broker action: %s, Traceback = %s " %(actionInfo, e)])
+                actionInfo = f"actionID = {actionInvocation.actionMeme},  subjectID = {actionInvocation.subjectID},  controllerID = {actionInvocation.controllerID}, objectID = {actionInvocation.objectID}"
+                Graph.logQ.put( [logType , logLevel.WARNING , method , f"Unknown error trying to pre-broker action: {actionInfo}, Traceback = {e} "])
 
             
             
@@ -770,7 +771,7 @@ class ActionEngine(ServicePlugin):
                         respondToWorkerQueue.put(terminationVerificationMsg.COMMIT)
                         self.deleteQueues(worker.queueID)
                 except Exception as e:
-                    Graph.logQ.put( [logType , logLevel.ERROR , method , "Unknown error on start closure of worker thread for landmark queue %s.  Traceback = %s" %(worker.queueID, e)])
+                    Graph.logQ.put( [logType , logLevel.ERROR , method , f"Unknown error on start closure of worker thread for landmark queue {worker.queueID}.  Traceback = {e}"])
                     respondToWorkerQueue.put(terminationVerificationMsg.COMMIT)
                     self.deleteQueues(worker.queueID)
     
@@ -786,18 +787,18 @@ class ActionEngine(ServicePlugin):
                 except AssertionError:
                     try:
                         assert worker.queueID in self.workerQueues
-                        Graph.logQ.put( [logType , logLevel.ERROR , method , "Disallowed request to rollback closure of worker thread for landmark queue %s because it is currently indexed as an active thread!" %(worker.queueID)])
+                        Graph.logQ.put( [logType , logLevel.ERROR , method , f"Disallowed request to rollback closure of worker thread for landmark queue {worker.queueID} because it is currently indexed as an active thread!"])
                         respondToWorkerQueue.put(terminationVerificationMsg.COMMIT)
                         self.deleteQueues(worker.queueID)
                     except AssertionError:
                         respondToWorkerQueue.put(terminationVerificationMsg.ROLLBACK)
                 except Exception as e:
                     try:
-                        Graph.logQ.put( [logType , logLevel.ERROR , method , "Disallowed request to rollback closure of depricated worker thread for landmark queue %s.  Traceback = %s" %(worker.queueID, e)])
+                        Graph.logQ.put( [logType , logLevel.ERROR , method , f"Disallowed request to rollback closure of depricated worker thread for landmark queue {worker.queueID}.  Traceback = {e}"])
                         respondToWorkerQueue.put(terminationVerificationMsg.ERROR)
                         self.deleteQueues(worker.queueID)
                     except Exception as e2:
-                        Graph.logQ.put( [logType , logLevel.ERROR , method , "Syntax error in request to rollback closure of depricated worker thread for landmark queue.  Request structure should be [<workerthread>, 1].  Was actually %s.  Traceback = %s  %s." %(request, e2, e)])
+                        Graph.logQ.put( [logType , logLevel.ERROR , method , f"Syntax error in request to rollback closure of depricated worker thread for landmark queue.  Request structure should be [<workerthread>, 1].  Was actually {request}.  Traceback = {e2}  {e}."])
                         respondToWorkerQueue.put(terminationVerificationMsg.ERROR)
                         self.deleteQueues(worker.queueID)
             else:
@@ -814,7 +815,7 @@ class ActionEngine(ServicePlugin):
                             respondToWorkerQueue.put(terminationVerificationMsg.COMMIT)
                             self.deleteQueues(worker.queueID)
                         except AssertionError:
-                            Graph.logQ.put( [logType , logLevel.ERROR , method , "Disallowed request to finalize closure of depricated worker thread for landmark queue %s because it is neither indexed as an active or depricated thread!" %(worker.queueID)])
+                            Graph.logQ.put( [logType , logLevel.ERROR , method , f"Disallowed request to finalize closure of depricated worker thread for landmark queue {worker.queueID} because it is neither indexed as an active or depricated thread!"])
                             respondToWorkerQueue.put(terminationVerificationMsg.COMMIT)    
                             self.deleteQueues(worker.queueID)                    
                     else:
@@ -832,27 +833,27 @@ class ActionEngine(ServicePlugin):
                             respondToWorkerQueue.put(terminationVerificationMsg.COMMIT)
                         except Exception as e:
                             try:
-                                Graph.logQ.put( [logType , logLevel.ERROR , method , "Problematic request to finalize closure of depricated worker thread for landmark queue %s.  Traceback = %s" %(worker.queueID, e)])
+                                Graph.logQ.put( [logType , logLevel.ERROR , method , f"Problematic request to finalize closure of depricated worker thread for landmark queue {worker.queueID}.  Traceback = {e}"])
                                 respondToWorkerQueue.put(terminationVerificationMsg.ERROR)
                                 self.deleteQueues(worker.queueID)
                             except Exception as e2:
-                                Graph.logQ.put( [logType , logLevel.ERROR , method , "Syntax error in request to finalize closure of depricated worker thread for landmark queue.  Request structure should be [<workerthread>, 1].  Was actually %s.  Traceback = %s  %s." %(request, e2, e)])
+                                Graph.logQ.put( [logType , logLevel.ERROR , method , f"Syntax error in request to finalize closure of depricated worker thread for landmark queue.  Request structure should be [<workerthread>, 1].  Was actually {request}.  Traceback = {e2}  {e}."])
                                 respondToWorkerQueue.put(terminationVerificationMsg.ERROR)
                                 self.deleteQueues(worker.queueID)
                 except AssertionError:
                     try:
                         assert worker.queueID in self.workerQueues
-                        Graph.logQ.put( [logType , logLevel.ERROR , method , "Disallowed request to finalize closure of worker thread for landmark queue %s because it is currently indexed as an active thread!" %(worker.queueID)])
+                        Graph.logQ.put( [logType , logLevel.ERROR , method , f"Disallowed request to finalize closure of worker thread for landmark queue {worker.queueID} because it is currently indexed as an active thread!"])
                         respondToWorkerQueue.put(terminationVerificationMsg.COMMIT)
                         self.deleteQueues(worker.queueID)
                     except AssertionError:
-                        Graph.logQ.put( [logType , logLevel.ERROR , method , "Disallowed request to finalize closure of depricated worker thread for landmark queue %s because it is neither indexed as an active or depricated thread!" %(worker.queueID)])
+                        Graph.logQ.put( [logType , logLevel.ERROR , method , f"Disallowed request to finalize closure of depricated worker thread for landmark queue {worker.queueID} because it is neither indexed as an active or depricated thread!"])
                         respondToWorkerQueue.put(terminationVerificationMsg.ERROR) 
                         self.deleteQueues(worker.queueID)                       
         except queue.Empty:
             respondToWorkerQueue.put(True)
         except Exception as e:
-            Graph.logQ.put( [logType , logLevel.ERROR , method , "Unknown error trying to manage worker thread. Traceback = %s " %(e)])
+            Graph.logQ.put( [logType , logLevel.ERROR , method , f"Unknown error trying to manage worker thread. Traceback = {e} "])
   
         
             
@@ -900,10 +901,10 @@ class ActionEngine(ServicePlugin):
                 workerToBeTerminated = self.workerQueues[workerKey]
                 workerToBeTerminated.join(0.5)
                 workerCount = workerCount + 1
-                Graph.logQ.put( [logType , logLevel.DEBUG , method , "......terminated worker thread for action queue %s" %(workerKey)])
+                Graph.logQ.put( [logType , logLevel.DEBUG , method , f"......terminated worker thread for action queue {workerKey}"])
             except Exception as e:
-                Graph.logQ.put( [logType , logLevel.ERROR , method , "...Problem trying to terminate worker thread %s.  Traceback = %s" %(workerKey, e)])
-        Graph.logQ.put( [logType , logLevel.INFO , method , "...terminated %s active workers" %(workerCount)])
+                Graph.logQ.put( [logType , logLevel.ERROR , method , f"...Problem trying to terminate worker thread {workerKey}.  Traceback = {e}"])
+        Graph.logQ.put( [logType , logLevel.INFO , method , f"...terminated {workerCount} active workers"])
         Graph.logQ.put( [logType , logLevel.ADMIN , method , "...finished terminating workers"])
         
         Graph.logQ.put( [logType , logLevel.ADMIN , method , "...shutting down indexer"])
@@ -959,7 +960,7 @@ class WorkerThread(threading.Thread):
                     #nothing to do.we have broken out of the termination
                     pass
             except Exception as e:
-                Graph.logQ.put( [logType , logLevel.ERROR , method , "Error popping action from worker dQueue %s.  Clearing Queue.  Traceback = %s" %(actionInvocation, e)])
+                Graph.logQ.put( [logType , logLevel.ERROR , method , f"Error popping action from worker dQueue {actionInvocation}.  Clearing Queue.  Traceback = {e}"])
                 self.dQueue.empty()
                 
             
@@ -1004,7 +1005,7 @@ class WorkerThread(threading.Thread):
                         if landmarksOK == True:
                             actionSetKeyframes = []
                             #debug
-                            debugMessage = "%s is an ActionSet" %actionInvocation.actionMeme.fullTemplatePath
+                            debugMessage = f"{actionInvocation.actionMeme.fullTemplatePath} is an ActionSet"
                             Graph.logQ.put( [logType , logLevel.DEBUG , method , debugMessage])
                             memenames = []
                             actionSetChildren = Graph.api.getLinkCounterpartsByMetaMemeType(actionInvocation.action.uuid, "Action.ChoreographyStep", None, False)
@@ -1013,7 +1014,7 @@ class WorkerThread(threading.Thread):
                                     memenames.append(actionSetChild)
                                 except:
                                     pass
-                            debugMessage = "ActionSet %s has members: %s" %(actionInvocation.actionMeme.fullTemplatePath, memenames)
+                            debugMessage = f"ActionSet {actionInvocation.actionMeme.fullTemplatePath} has members: {memenames}"
                             Graph.logQ.put( [logType , logLevel.DEBUG , method , debugMessage])
                             #/debug
                             
@@ -1045,11 +1046,11 @@ class WorkerThread(threading.Thread):
                                                             actionSetKeyframe.objectID, \
                                                             actionSetKeyframe.subjectID, \
                                                             actionSetKeyframe.rtParams]  
-                                        errorMsg = "Unindexed action %s requested by controller %s. Security log message generated." %(actionSetKeyframe.actionMeme.fullTemplatePath, actionSetKeyframe.controllerID)
+                                        errorMsg = f"Unindexed action {actionSetKeyframe.actionMeme.fullTemplatePath} requested by controller {actionSetKeyframe.controllerID}. Security log message generated."
                                         Graph.logQ.put( [logType , logLevel.WARNING , method, errorMsg])
                                         securityLogQ.put(securityMessage)
                                     except Exception as e:
-                                        errorMsg = "unknown error during action copy and instance ID refresh. Traceback = %s" %e
+                                        errorMsg = f"unknown error during action copy and instance ID refresh. Traceback = {e}"
                                         Graph.logQ.put( [logType , logLevel.ERROR , method, errorMsg])
                                         raise e
                                     
@@ -1060,19 +1061,19 @@ class WorkerThread(threading.Thread):
                                     #self.dQueue.appendleft(actionSetKeyframe)
                                     self.dQueue.put_nowait(actionSetKeyframe)
                                     #debug
-                                    debugMessage = "posting choreography %s member %s to action queue" %(actionInvocation.actionMeme.fullTemplatePath, actionSetKeyframe.actionMeme.fullTemplatePath)
+                                    debugMessage = f"posting choreography {actionInvocation.actionMeme.fullTemplatePath} member {actionSetKeyframe.actionMeme.fullTemplatePath} to action queue"
                                     Graph.logQ.put( [logType , logLevel.DEBUG , method , debugMessage])
                                     #/debug 
                                     
                                 except AssertionError:
                                     #Laglog candidate
-                                    errorMsg = "Unknown Action Request: Controller = %s, subjectID = %s, actionID = %s" %(actionSetKeyframe.controllerID, actionSetKeyframe.subjectID, actionSetKeyframe.actionMeme.fullTemplatePath)
+                                    errorMsg = f"Unknown Action Request: Controller = {actionSetKeyframe.controllerID}, subjectID = {actionSetKeyframe.subjectID}, actionID = {actionSetKeyframe.actionMeme.fullTemplatePath}"
                                     Graph.logQ.put( [logType , logLevel.ERROR , method, errorMsg])
                                 except Exceptions.UnknownAction as e:
                                     Graph.logQ.put( [logType , logLevel.WARNING , method , e]) 
                                 except Exception as e:
-                                        actionInfo = "actionID = %s,  subjectID = %s,  controllerID = %s, objectID = %s" %(actionSetKeyframe.actionMeme, actionSetKeyframe.subjectID, actionSetKeyframe.controllerID, actionSetKeyframe.objectID)
-                                        Graph.logQ.put( [logType , logLevel.WARNING , method , "Unknown error trying to pre-broker action: %s, Traceback = %s " %(actionInfo, e)])                           
+                                        actionInfo = f"actionID = {actionSetKeyframe.actionMeme},  subjectID = {actionSetKeyframe.subjectID},  controllerID = {actionSetKeyframe.controllerID}, objectID = {actionSetKeyframe.objectID}"
+                                        Graph.logQ.put( [logType , logLevel.WARNING , method , f"Unknown error trying to pre-broker action: {actionInfo}, Traceback = {e} "])                           
                     elif type(testCatch) == type(actionInvocation.action):
                         pass  # only react on catch inside of catchQueueException() 
                     elif type(testThrow) == type(actionInvocation.action):
@@ -1095,7 +1096,7 @@ class WorkerThread(threading.Thread):
                                 errorID = str(fullerror[0])
                                 #tb = sys.exc_info()[2]
                                 #raise Exceptions.ScriptError(ex).with_traceback(tb)
-                                errorMsg = "Uncaught exception [%s] occurred while processing keyframe %s from controller %s.  Traceback = %s" %(errorID, actionInvocation.actionMeme.fullTemplatePath, actionInvocation.controllerID, errorMsg)
+                                errorMsg = f"Uncaught exception [{errorID}] occurred while processing keyframe {actionInvocation.actionMeme.fullTemplatePath} from controller {actionInvocation.controllerID}.  Traceback = {errorMsg}"
                                 Graph.logQ.put( [logType , logLevel.ERROR , method , errorMsg])
             except IndexError as e:
                 dummyErrorMsg = e
@@ -1108,15 +1109,15 @@ class WorkerThread(threading.Thread):
                     self._stopevent.set()
             except AttributeError as e:
 
-                errorMsg = "Unregistered Action: actionID = %s,  subjectID = %s,  controllerID = %s, objectID = %s.  Traceback = %s" %(actionInvocation.actionMeme, actionInvocation.subjectID, actionInvocation.controllerID, actionInvocation.objectID,e)
+                errorMsg = f"Unregistered Action: actionID = {actionInvocation.actionMeme},  subjectID = {actionInvocation.subjectID},  controllerID = {actionInvocation.controllerID}, objectID = {actionInvocation.objectID}.  Traceback = {e}"
                 Graph.logQ.put( [logType , logLevel.ERROR , method , errorMsg])
             except Exception as e:
                 fullerror = sys.exc_info()
                 errorMsg = str(fullerror[1])
                 errorID = str(fullerror[0])
-                errorMsg = "Uncaught exception [%s] occurred while processing action queue %s.  Traceback = %e" %(errorID, actionInvocation, errorMsg)
+                errorMsg = f"Uncaught exception [{errorID}] occurred while processing action queue {actionInvocation}.  Traceback = %e"
                 Graph.logQ.put( [logType , logLevel.ERROR , method , errorMsg])
-                Graph.logQ.put( [logType , logLevel.ERROR , method , "Unknown error processing action queue %s.  Traceback = %s" %(actionInvocation, e)])
+                Graph.logQ.put( [logType , logLevel.ERROR , method , f"Unknown error processing action queue {actionInvocation}.  Traceback = {e}"])
                 try:
                     self.shutdown()
                 except Exceptions.WorkerThreadTerminationRollback:
@@ -1135,12 +1136,12 @@ class WorkerThread(threading.Thread):
                 nextTaskMeme = nextTask.actionMeme.fullTemplatePath
                 if nextTaskType == 'Catch':
                     #Todo: lagLog
-                    logMessage = "%s cleared action %s from action engine worker queue %s.  Subject = %s, Object = %s.  Action is catch.  Queue clearing halted." %(method, nextTask.actionMeme.fullTemplatePath, nextTask.actionID, nextTask.subjectID, nextTask.objectID)
+                    logMessage = f"{method} cleared action {nextTask.actionMeme.fullTemplatePath} from action engine worker queue {nextTask.actionID}.  Subject = {nextTask.subjectID}, Object = {nextTask.objectID}.  Action is catch.  Queue clearing halted."
                     Graph.logQ.put( [logType , logLevel.DEBUG , method , logMessage])
                     break
                 else:
                     #Todo: lagLog
-                    logMessage = "%s cleared action %s from action engine worker queue %s.  Subject = %s, Object = %s.  Action is not a catch and the queue will continue to be cleared." %(method, nextTask.actionMeme.fullTemplatePath, nextTask.actionID, nextTask.subjectID, nextTask.objectID)
+                    logMessage = f"{method} cleared action {nextTask.actionMeme.fullTemplatePath} from action engine worker queue {nextTask.actionID}.  Subject = {nextTask.subjectID}, Object = {nextTask.objectID}.  Action is not a catch and the queue will continue to be cleared."
                     Graph.logQ.put( [logType , logLevel.DEBUG , method , logMessage])
         except queue.Empty as e:
             #we have an empty dQueue and are not awaiting a any unpacked keyframes.  Go ahead and start shutting down
@@ -1150,7 +1151,7 @@ class WorkerThread(threading.Thread):
                 #nothing to do.we have broken out of the termination
                 pass
         except Exception as e:
-            Graph.logQ.put( [logType , logLevel.ERROR , method , "Error popping action from worker dQueue %s.  Clearing Queue.  Traceback = %s" %(self.__name, e)])
+            Graph.logQ.put( [logType , logLevel.ERROR , method , f"Error popping action from worker dQueue {self.__name}.  Clearing Queue.  Traceback = {e}"])
             self.dQueue.empty()
         
         
@@ -1177,9 +1178,9 @@ class WorkerThread(threading.Thread):
                     #debug
                     landmarksOK = actionInvocation.action.checkLandmarks(actionInvocation.subjectID, actionInvocation.decoratingLandmarks)
                     #/debug
-                    errorMsg = "Landmarks Invalid for action %s by subject %s.  " %(actionMeme, subjectMeme)
+                    errorMsg = f"Landmarks Invalid for action {actionMeme} by subject {subjectMeme}.  "
                 if (conditionsOK == False):
-                    errorMsg = "Conditions Invalid for action %s by subject %s.  " %(actionMeme, subjectMeme)
+                    errorMsg = f"Conditions Invalid for action {actionMeme} by subject {subjectMeme}.  "
                 raise Exceptions.ActionKeyframeExecutionError(errorMsg)
             
             startTime = time.time()
@@ -1196,7 +1197,7 @@ class WorkerThread(threading.Thread):
                 actionInvocation.action.invoke(actionInvocation.rtParams)
                 
             except Exception as e:
-                errorMsg = "Error while invoking script on keyframe %s on landmark %s.  Subject = %s, object = %s  Traceback = %s" %(actionInvocation.actionMeme, self.queueID, actionInvocation.subjectID, actionInvocation.objectID, e)
+                errorMsg = f"Error while invoking script on keyframe {actionInvocation.actionMeme} on landmark {self.queueID}.  Subject = {actionInvocation.subjectID}, object = {actionInvocation.objectID}  Traceback = {e}"
                 Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
                 raise Exceptions.ActionKeyframeExecutionError(e)
                         
@@ -1221,7 +1222,7 @@ class WorkerThread(threading.Thread):
             try:
                 objectMeme = Graph.api.getEntityMemeType(actionInvocation.objectID)
             except: pass
-            errorMsg = "Nested Exceptions.ActionKeyframeExecutionError Error while processing keyframe %s on landmark %s.  Subject = %s, object = %s  Traceback = %s" %(actionMeme, self.queueID, subjectMeme, objectMeme, e)
+            errorMsg = f"Nested Exceptions.ActionKeyframeExecutionError Error while processing keyframe {actionMeme} on landmark {self.queueID}.  Subject = {subjectMeme}, object = {objectMeme}  Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
             raise Exceptions.ActionKeyframeExecutionError(errorMsg) 
         except Exception as e:
@@ -1237,7 +1238,7 @@ class WorkerThread(threading.Thread):
             try:
                 objectMeme = Graph.api.getEntityMemeType(actionInvocation.objectID)
             except: pass
-            errorMsg = "Error while processing keyframe %s on landmark %s.  Subject = %s, object = %s  Traceback = %s" %(actionMeme, self.queueID, subjectMeme, objectMeme, e)
+            errorMsg = f"Error while processing keyframe {actionMeme} on landmark {self.queueID}.  Subject = {subjectMeme}, object = {objectMeme}  Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
             raise Exceptions.ActionKeyframeExecutionError(errorMsg)
             
@@ -1272,7 +1273,7 @@ class WorkerThread(threading.Thread):
                 self.finalizeShutdown(False)
                 raise SystemExit()
             except Exception as e:
-                errorMsg = "Abnormal termination start of worker thread %s, for landmark %s.  Traceback = %s" %(self._Thread__name, self.queueID, e)
+                errorMsg = f"Abnormal termination start of worker thread {self._Thread__name}, for landmark {self.queueID}.  Traceback = {e}"
                 Graph.logQ.put( [logType , logLevel.ERROR , method , errorMsg])
                 self.finalizeShutdown(False)
                 raise SystemExit(errorMsg)
@@ -1308,12 +1309,12 @@ class WorkerThread(threading.Thread):
                     #Roll back the termination
                     raise Exceptions.WorkerThreadTerminationRollback()
                 elif verification == terminationVerificationMsg.ERROR:
-                    errorMsg = "Worker thread for landmark %s is improperly indexed" %self.queueID
+                    errorMsg = f"Worker thread for landmark {self.queueID} is improperly indexed"
                     Graph.logQ.put( [logType , logLevel.ERROR , method , errorMsg])
                     raise Exceptions.WorkerThreadIndexError(errorMsg)
                 else:
                     #Should not happen
-                    errorMsg = "Unexpected shutdown verification response for worker thread on landmark %s" %self.queueID
+                    errorMsg = f"Unexpected shutdown verification response for worker thread on landmark {self.queueID}"
                     Graph.logQ.put( [logType , logLevel.ERROR , method , errorMsg])
                     raise Exceptions.WorkerThreadIndexError(errorMsg)
                 break
@@ -1322,7 +1323,7 @@ class WorkerThread(threading.Thread):
             except Exceptions.WorkerThreadTerminationRollback:
                 raise Exceptions.WorkerThreadTerminationRollback()
             except Exception as e:
-                errorMsg = "Unexpected error during shutdown verification process for worker thread on landmark %s.  Traceback= %s" %(self.queueID, e)
+                errorMsg = f"Unexpected error during shutdown verification process for worker thread on landmark {self.queueID}.  Traceback= {e}"
                 Graph.logQ.put( [logType , logLevel.ERROR , method , errorMsg])
                 raise e
             
@@ -1340,7 +1341,7 @@ class WorkerThread(threading.Thread):
             raise Exceptions.WorkerThreadTerminationRollback()
             # AE returned terminationVerificationMsg.ERROR
         except Exception as e:
-            errorMsg = "Abnormal termination commit of worker thread for landmark %s.  Traceback = %s" %(self.queueID, e)
+            errorMsg = f"Abnormal termination commit of worker thread for landmark {self.queueID}.  Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.ERROR , method , errorMsg])
             self._stopevent.set()
             raise SystemExit()
@@ -1399,7 +1400,7 @@ class ActionIndexer(threading.Thread):
                 repoEntries.append(entityID)
             
             numberOfEntities = len(repoEntries)
-            Graph.logQ.put( [logType , logLevel.INFO , os.path.splitext(os.path.basename(__file__))[0] + '.' + self.className + '.' + 'run'  , "Indexer has %s entities to check" %numberOfEntities])
+            Graph.logQ.put( [logType , logLevel.INFO , os.path.splitext(os.path.basename(__file__))[0] + '.' + self.className + '.' + 'run'  , f"Indexer has {numberOfEntities} entities to check"])
             #Now filter this list down to ones with "Action.Action" in their taxonomy
             fullMetamemeTaxonomyEntries = []
             nth = 1
@@ -1410,29 +1411,29 @@ class ActionIndexer(threading.Thread):
                     if "Action.Action" in fullMetamemeTaxonomy:
                         #actionIndexerQ.put(entityID)
                         fullMetamemeTaxonomyEntries.append(entityID)
-                    Graph.logQ.put( [logType , logLevel.INFO , os.path.splitext(os.path.basename(__file__))[0] + '.' + self.className + '.' + 'run'  , "Determined taxonomy on %s of %s entities" %(nth, numberOfEntities)])
+                    Graph.logQ.put( [logType , logLevel.INFO , os.path.splitext(os.path.basename(__file__))[0] + '.' + self.className + '.' + 'run'  , f"Determined taxonomy on {nth} of {numberOfEntities} entities"])
                     nth = nth + 1
                 except Exception as e:
-                    Graph.logQ.put( [logType , logLevel.ERROR , os.path.splitext(os.path.basename(__file__))[0] + '.' + self.className + '.' + 'run'  , "Unknown error indexing action %s.  Traceback = %s" %(entityID, e)])
+                    Graph.logQ.put( [logType , logLevel.ERROR , os.path.splitext(os.path.basename(__file__))[0] + '.' + self.className + '.' + 'run'  , f"Unknown error indexing action {entityID}.  Traceback = {e}"])
                   
             #Now index the actions
             numberOfActions = len(fullMetamemeTaxonomyEntries)  
-            Graph.logQ.put( [logType , logLevel.INFO , os.path.splitext(os.path.basename(__file__))[0] + '.' + self.className + '.' + 'run'  , "Indexer has %s actions to index" %numberOfActions])      
+            Graph.logQ.put( [logType , logLevel.INFO , os.path.splitext(os.path.basename(__file__))[0] + '.' + self.className + '.' + 'run'  , f"Indexer has {numberOfActions} actions to index"])      
             jth = 1
             for toBeIndexed in fullMetamemeTaxonomyEntries:
                 try:
                     self.indexItem(toBeIndexed)
-                    Graph.logQ.put( [logType , logLevel.INFO , os.path.splitext(os.path.basename(__file__))[0] + '.' + self.className + '.' + 'run'  , "Indexed %s of %s actions" %(jth, numberOfActions)])
+                    Graph.logQ.put( [logType , logLevel.INFO , os.path.splitext(os.path.basename(__file__))[0] + '.' + self.className + '.' + 'run'  , f"Indexed {jth} of {numberOfActions} actions"])
                     jth = jth + 1
                 except Exception as e:
-                    Graph.logQ.put( [logType , logLevel.ERROR , os.path.splitext(os.path.basename(__file__))[0] + '.' + self.className + '.' + 'run'  , "Unknown error indexing action %s.  Traceback = %s" %(entityID, e)])
+                    Graph.logQ.put( [logType , logLevel.ERROR , os.path.splitext(os.path.basename(__file__))[0] + '.' + self.className + '.' + 'run'  , f"Unknown error indexing action {entityID}.  Traceback = {e}"])
 
             
             endTime = time.time()
             deltaT = endTime - startTime
             self.startupStateActionsFinished = True
             Graph.logQ.put( [logType , logLevel.ADMIN , os.path.splitext(os.path.basename(__file__))[0] + '.' + self.className + '.' + 'run'  , "Action Indexer - Finished ad hoc load run"])
-            Graph.logQ.put( [logType , logLevel.ADMIN , os.path.splitext(os.path.basename(__file__))[0] + '.' + self.className + '.' + 'run'  , "Action Indexer - Indexed %s actions in %s seconds" %(len(fullMetamemeTaxonomyEntries), deltaT)])
+            Graph.logQ.put( [logType , logLevel.ADMIN , os.path.splitext(os.path.basename(__file__))[0] + '.'  + self.className + '.' + 'run'  , f"Action Indexer - Indexed {len(fullMetamemeTaxonomyEntries)} actions in {deltaT} seconds"])
             Graph.logQ.put( [logType , logLevel.DEBUG , os.path.splitext(os.path.basename(__file__))[0] + '.' + self.className + '.' + 'run'  , "exiting"])
         else:
             #index off of the chosen queue
@@ -1441,14 +1442,14 @@ class ActionIndexer(threading.Thread):
             while self.isAlive():
                 try:
                     #toBeLogged = the memeID
-                    Graph.logQ.put( [logType , logLevel.DEBUG , os.path.splitext(os.path.basename(__file__))[0] + '.' + self.className + '.' + 'run'  , "Checking Action Indexer Q.  Current number of estimated workitems = %s" %(actionIndexerQ.qsize())])
+                    Graph.logQ.put( [logType , logLevel.DEBUG , os.path.splitext(os.path.basename(__file__))[0] + '.' + self.className + '.' + 'run'  , f"Checking Action Indexer Q.  Current number of estimated workitems = {actionIndexerQ.qsize()}"])
                     toBeIndexed = actionIndexerQ.get_nowait()
                     try:
-                        Graph.logQ.put( [logType , logLevel.DEBUG , os.path.splitext(os.path.basename(__file__))[0] + '.' + self.className + '.' + 'run'  , "Action Indexer off of the chosen queue - Index %s" %(toBeIndexed)])
+                        Graph.logQ.put( [logType , logLevel.DEBUG , os.path.splitext(os.path.basename(__file__))[0] + '.' + self.className + '.' + 'run'  , f"Action Indexer off of the chosen queue - Index {toBeIndexed}"])
                         self.indexItem(toBeIndexed)
                         nTh = nTh + 1
                     except Exception as e:
-                        Graph.logQ.put( [logType , logLevel.ERROR , os.path.splitext(os.path.basename(__file__))[0] + '.' + self.className + '.' + 'run'  , "Action Indexer - Problem indexing action %s.  Traceback = %s" %(toBeIndexed, e)])
+                        Graph.logQ.put( [logType , logLevel.ERROR , os.path.splitext(os.path.basename(__file__))[0] + '.' + self.className + '.' + 'run'  , f"Action Indexer - Problem indexing action {toBeIndexed}.  Traceback = {e}"])
                 except queue.Empty:
                     if finishedInitialIndexing == False:
                         finishedInitialIndexing = True
@@ -1456,10 +1457,10 @@ class ActionIndexer(threading.Thread):
                         deltaT = endTime - startTime
                         self.startupStateActionsFinished = True
                         Graph.logQ.put( [logType , logLevel.ADMIN , os.path.splitext(os.path.basename(__file__))[0] + '.' + self.className + '.' + 'run'  , "Action Indexer - Finished initial loading from engine action indexer queue"])
-                        Graph.logQ.put( [logType , logLevel.ADMIN , os.path.splitext(os.path.basename(__file__))[0] + '.' + self.className + '.' + 'run'  , "Action Indexer - Indexed %s actions in %s seconds" %(nTh, deltaT)])
+                        Graph.logQ.put( [logType , logLevel.ADMIN , os.path.splitext(os.path.basename(__file__))[0] + '.' + self.className + '.' + 'run'  , f"Action Indexer - Indexed {nTh} actions in {deltaT} seconds"])
                     self._stopevent.wait(self._sleepperiod)
                 except Exception as e:
-                    Graph.logQ.put( [logType , logLevel.ERROR , os.path.splitext(os.path.basename(__file__))[0] + '.' + self.className + '.' + 'run'  , "Action Indexer - Unknown Error.  Traceback = %s" %e])
+                    Graph.logQ.put( [logType , logLevel.ERROR , os.path.splitext(os.path.basename(__file__))[0] + '.' + self.className + '.' + 'run'  , f"Action Indexer - Unknown Error.  Traceback = {e}"])
                     self._stopevent.wait(self._sleepperiod)
                    
 
@@ -1493,15 +1494,15 @@ class ActionIndexer(threading.Thread):
             #Actions are indexed by meme path
             #self.registrar.actionIndex[action.meme] = action
             self.actionIndex[action.meme] = action
-            Graph.logQ.put( [logType , logLevel.INFO , method, "Indexed %s to action registrar" %action.meme])
+            Graph.logQ.put( [logType , logLevel.INFO , method, f"Indexed {action.meme} to action registrar"])
         except Exceptions.ScriptError as e:
             actionMeme = Graph.api.getEntityMemeType(toBeIndexed)
-            errorMsg = "Error indexing action %s %s.  Traceback = %s" %(actionMeme, toBeIndexed, e)
+            errorMsg = f"Error indexing action {actionMeme} {toBeIndexed}.  Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method, errorMsg])
             raise e
         except Exception as e:
             actionMeme = Graph.api.getEntityMemeType(toBeIndexed)
-            errorMsg = "Error indexing action %s %s.  Traceback = %s" %(actionMeme, toBeIndexed, e)
+            errorMsg = f"Error indexing action {actionMeme} {toBeIndexed}.  Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method, errorMsg])
             raise e
         finally:
@@ -1526,7 +1527,7 @@ class Action(object):
             self.actionID = actionID
             self.instanceID = None
         except Exception as e:
-            errorMsg = "Unknown error initializing action %s.  Traceback = %s" %(actionID, e)
+            errorMsg = f"Unknown error initializing action {actionID}.  Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method, errorMsg])
         #logProxy.log(logProxy.logType, logProxy.DEBUG , method , "exiting"])
         
@@ -1544,7 +1545,7 @@ class Action(object):
         try:
             self.instanceID = uuid.uuid1()
         except Exception as e:
-            errorMsg = "Unknown error refreshing instance UUID on action %s.  Traceback = %s" %(self.meme, e)
+            errorMsg = f"Unknown error refreshing instance UUID on action {self.meme}.  Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method, errorMsg])
         
             
@@ -1599,13 +1600,13 @@ class Action(object):
                     masterLandmarkList = Graph.api.getLinkCounterpartsByMetaMemeType(self.uuid, lmMPath)
                     self.masterLandmark = masterLandmarkList[0]
                 except Exception as e:
-                    errorMsg = "Action %s has no master landmark defined" %self.meme
+                    errorMsg = f"Action {self.meme} has no master landmark defined"
                     raise Exceptions.MemeMembershipValidationError(errorMsg)
             except Exceptions.MemeMembershipValidationError as e:
                 raise e
             except Exception as e:
                 masterLandmarkList = Graph.api.getLinkCounterpartsByMetaMemeType(self.uuid, lmMPath)
-                errorMsg = "Action %s has no master landmark defined" %self.meme
+                errorMsg = f"Action {self.meme} has no master landmark defined"
                 raise Exceptions.MemeMembershipValidationError(errorMsg)
             
             #Remote Debugger
@@ -1658,7 +1659,7 @@ class Action(object):
             errorID = str(fullerror[0])
             errorMsg = str(fullerror[1])
             #tb = sys.exc_info()[2]
-            errorMsg = "Error adding landmarks to keyframe object of action %s.  Traceback = %s, %s" %(self.meme, errorID, errorMsg)
+            errorMsg = f"Error adding landmarks to keyframe object of action {self.meme}.  Traceback = {errorID}, {errorMsg}"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
         #logProxy.log(logProxy.logType, logProxy.DEBUG , method , "exiting"])
             
@@ -1703,7 +1704,7 @@ class Action(object):
             if False not in allLandmarks:
                 allTrue = True
         except Exception as e:
-            errorMsg = "Unknown error checking landmarks for keyframe object of action %s.  Traceback = %s" %(self.meme, e)
+            errorMsg = f"Unknown error checking landmarks for keyframe object of action {self.meme}.  Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
         finally: return allTrue    
     
@@ -1713,7 +1714,7 @@ class Action(object):
             exTrue = Graph.api.map(self.mapFunctionLandmarks, self.landmarksExclusive, agentUUID)
             return exTrue
         except Exception as e:
-            errorMsg = "Unknown error checking exclusive landmarks for keyframe object of action %s.  Traceback = %s" %(self.meme, e)
+            errorMsg = f"Unknown error checking exclusive landmarks for keyframe object of action {self.meme}.  Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
             return False
         
@@ -1725,7 +1726,7 @@ class Action(object):
             localResult = Graph.api.getHasCounterpartsByType(agentUUID, landMarkPath)
             return localResult 
         except Exception as e:
-            errorMsg = "Unknown error mapping landmark %s for keyframe object of action %s.  Traceback = %s" %(landMarkPath, self.meme, e)
+            errorMsg = f"Unknown error mapping landmark {landMarkPath} for keyframe object of action {self.meme}.  Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
             return False   
         
@@ -1748,7 +1749,7 @@ class ConditionalAction(object):
             conditionPath = "Graphyne.Condition.Condition"
             conditionElements = Graph.api.getLinkCounterpartsByMetaMemeType(self.uuid, conditionPath)
             for conditionElement in conditionElements:
-                errorMsg = "adding condition %s to action %s" %(conditionElement, self.uuid)
+                errorMsg = f"adding condition {conditionElement} to action {self.uuid}"
                 Graph.logQ.put( [logType , logLevel.DEBUG , method , errorMsg])
                 
                 self.conditions.append(conditionElement)
@@ -1756,7 +1757,7 @@ class ConditionalAction(object):
             actionID = None
             try: actionID = self.meme
             except: pass
-            errorMsg = "Unknown error adding conditions to action %s.  Traceback = %s" %(actionID, e)
+            errorMsg = f"Unknown error adding conditions to action {actionID}.  Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
         #logProxy.log(logProxy.logType, logProxy.DEBUG , method , "exiting"])
             
@@ -1770,7 +1771,7 @@ class ConditionalAction(object):
             actionID = None
             try: actionID = self.meme
             except: pass
-            errorMsg = "Unknown error testing individual condition on action %s.  Traceback = %s" %(actionID, e)
+            errorMsg = f"Unknown error testing individual condition on action {actionID}.  Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
             return False
     
@@ -1787,7 +1788,7 @@ class ConditionalAction(object):
             actionID = None
             try: actionID = self.meme
             except: pass
-            errorMsg = "Unknown error testing conditions on action %s.  Traceback = %s" %(actionID, e)
+            errorMsg = f"Unknown error testing conditions on action {actionID}.  Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
             return False
     
@@ -1835,14 +1836,14 @@ class ActionSet(Action):
                         #/debug
                         self.packedMemberList.append(sortedMember)
                 except Exception as e:
-                    errorMsg = "Unknown error setting up ChoreographyStep members on action %s.Traceback = %s" %(self.meme, e)
+                    errorMsg = f"Unknown error setting up ChoreographyStep members on action {self.meme}.Traceback = {e}"
                     sortedMember = Graph.api.getEntityMemeType(sortedMemberUUID)
                     Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
             except Exception as e:
                 #level 2
                 pass
         except Exception as e:
-            errorMsg = "Unknown error bootstrapping choreography %s.  Traceback = %s" %(self.meme, e)
+            errorMsg = f"Unknown error bootstrapping choreography {self.meme}.  Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
             #debug
             try:
@@ -1885,7 +1886,7 @@ class ActionSet(Action):
                 memberEntityMembers = memberEntity.getInflatedMemberList()
                 returnList.extend(memberEntityMembers)
             except AssertionError:
-                errorMsg = "Action set %s has member %s, which is not indexed in action engine" %(self.meme, taskItem)
+                errorMsg = f"Action set {self.meme} has member {taskItem}, which is not indexed in action engine"
                 Graph.logQ.put( [logType , logLevel.ERROR , method , errorMsg])
         #debug
         #debugMessage = "Action set %s has the following members: %s" %(self.meme, returnList)
@@ -1923,7 +1924,7 @@ class KeyFrame(Action, ConditionalAction):
             conditionPath = "Action.ObjectSelectionCondition::Graphyne.Condition.Condition"
             self.objectSelectionConditions = Graph.api.getLinkCounterpartsByMetaMemeType(self.uuid, conditionPath)
         except Exception as e:
-            errorMsg = "Unknown error adding object selection conditions to keyframe object of action %s.  Traceback = %s" %(self.meme, e)
+            errorMsg = f"Unknown error adding object selection conditions to keyframe object of action {self.meme}.  Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
 
         
@@ -2010,7 +2011,7 @@ class KeyFrame(Action, ConditionalAction):
                     for prio in prioList:
                         self.stateChangeSuccessor.append(tempMap[prio])
         except Exception as e:
-            errorMsg = "Unknown error adding state change information to kexframe object of action %s.  Traceback = %s" %(self.meme, e)
+            errorMsg = f"Unknown error adding state change information to kexframe object of action {self.meme}.  Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
 
         
@@ -2022,7 +2023,7 @@ class KeyFrame(Action, ConditionalAction):
         try:
             self.conditionalStimuli = self.getConditionalStimuli(self.uuid)
         except Exception as e:
-            errorMsg = "Unknown error adding stimuli information to keyframe object of action %s.  Traceback = %s" %(self.meme, e)
+            errorMsg = f"Unknown error adding stimuli information to keyframe object of action {self.meme}.  Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
         
         
@@ -2041,7 +2042,7 @@ class KeyFrame(Action, ConditionalAction):
             conditionalStimuli = Graph.api.getLinkCounterpartsByMetaMemeType(rootNodeID, "Stimulus.StimulusChoice")
             return conditionalStimuli
         except Exception as e:
-            errorMsg = "Unknown error getting conditional stimuli for keyframe object of action %s.  Traceback = %s" %(self.meme, e)
+            errorMsg = f"Unknown error getting conditional stimuli for keyframe object of action {self.meme}.  Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
     
     
@@ -2060,7 +2061,7 @@ class KeyFrame(Action, ConditionalAction):
             self.controllerBlacklist = controllerBlacklist
             self.controllerWhitelist = controllerWhitelist
         except Exception as e:
-            errorMsg = "Unknown error adding controllers to keyframe object of action %s.  Traceback = %s" %(self.meme, e)
+            errorMsg = f"Unknown error adding controllers to keyframe object of action {self.meme}.  Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
         
         
@@ -2073,7 +2074,7 @@ class KeyFrame(Action, ConditionalAction):
             if len(timescaleElem) > 1:
                 self.timescale = timescaleElem[0]
         except Exception as e:
-            errorMsg = "Unknown error adding tiimescale to keyframe object of action %s.  Traceback = %s" %(self.meme, e)
+            errorMsg = f"Unknown error adding tiimescale to keyframe object of action {self.meme}.  Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
             
             
@@ -2086,7 +2087,7 @@ class KeyFrame(Action, ConditionalAction):
             if len(viewElem) > 1:
                 self.view = viewElem[0]
         except Exception as e:
-            errorMsg = "Unknown error adding view to keyframe object of action %s.  Traceback = %s" %(self.meme, e)
+            errorMsg = f"Unknown error adding view to keyframe object of action {self.meme}.  Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
 
         
@@ -2113,7 +2114,7 @@ class KeyFrame(Action, ConditionalAction):
             except copy.Error as e:
                 raise e
             except Exception as e:
-                errorMsg = "Copy Error.  Traceback = %s" %(e)
+                errorMsg = f"Copy Error.  Traceback = {e}"
                 raise Exception(errorMsg)
             argumentMap["objectID"] = objectID
             localResult = None
@@ -2122,7 +2123,7 @@ class KeyFrame(Action, ConditionalAction):
                 localResult = objectID
             return localResult    
         except Exception as e:
-            errorMsg = "Unknown error mapping objects for keyframe object of action %s.  rtparams = %s Traceback = %s" %(self.meme, rtParams, e)
+            errorMsg = f"Unknown error mapping objects for keyframe object of action {self.meme}.  rtparams = {rtParams} Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
             return None
     
@@ -2134,7 +2135,7 @@ class KeyFrame(Action, ConditionalAction):
             transformResult = self.checkEulerAngles(landmarkTransform[0], transformDict["rotationX"], transformDict["rotationY"], transformDict["rotationZ"])
             return transformResult
         except Exception as e:
-            errorMsg = "Unknown error mapping euler transforms for keyframe object of action %s.  landmarkTransform = %s Traceback = %s" %(self.meme, landmarkTransform[1], e)
+            errorMsg = f"Unknown error mapping euler transforms for keyframe object of action {self.meme}.  landmarkTransform = {landmarkTransform[1]} Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
             return False
     
@@ -2146,7 +2147,7 @@ class KeyFrame(Action, ConditionalAction):
             transformResult = self.checkDeltas(landmarkTransform[0], transformDict["deltaX"], transformDict["deltaY"], transformDict["deltaZ"])
             return transformResult
         except Exception as e:
-            errorMsg = "Unknown error mapping transform deltas for keyframe object of action %s.  landmarkTransform = %s Traceback = %s" %(self.meme, landmarkTransform[1], e)
+            errorMsg = f"Unknown error mapping transform deltas for keyframe object of action {self.meme}.  landmarkTransform = {landmarkTransform[1]} Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
             return False
     
@@ -2161,7 +2162,7 @@ class KeyFrame(Action, ConditionalAction):
                 stateChange.execute(argumentMap["subjectID"], argumentMap["objectID"])
                 self.conditionalStimuli.extend(stateChange.stateChangeStimuli)
         except Exception as e:
-            errorMsg = "Unknown error mapping state change for keyframe object of action %s.  argumentMap = %s Traceback = %s" %(self.meme, argumentMap, e)
+            errorMsg = f"Unknown error mapping state change for keyframe object of action {self.meme}.  argumentMap = {argumentMap} Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
         finally: return None
             
@@ -2187,7 +2188,7 @@ class KeyFrame(Action, ConditionalAction):
             except copy.Error as e:
                 raise e
             except Exception as e:
-                errorMsg = "Copy Error.  Traceback = %s" %(e)
+                errorMsg = f"Copy Error.  Traceback = {e}"
                 raise Exception(errorMsg)
             #argumentMap = copy.deepcopy(rtParams)
             argumentMap["objectID"] = objectID
@@ -2197,10 +2198,10 @@ class KeyFrame(Action, ConditionalAction):
             unusedReturn = self.Graph.api.map(self.mapFunctionStateChangesInner, self.stateChangeSuccessor, argumentMap)
         except copy.Error as e:
             #Logged as error instead of warning because an uncopyable paramater payload from a client may be indicative of an attempted attack.
-            errorMsg = "Unable to map state change for keyframe object of action %s because runtime parameters contains an uncopyable object!  rtParams = %s" %(self.meme, rtParams)
+            errorMsg = f"Unable to map state change for keyframe object of action {self.meme} because runtime parameters contains an uncopyable object!  rtParams = {rtParams}"
             Graph.logQ.put( [logType , logLevel.ERROR , method , errorMsg])
         except Exception as e:
-            errorMsg = "Unknown error mapping state change for keyframe object of action %s.  rtParams = %s Traceback = %s" %(self.meme, rtParams, e)
+            errorMsg = f"Unknown error mapping state change for keyframe object of action {self.meme}.  rtParams = {rtParams} Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
         finally: return None
     
@@ -2219,7 +2220,7 @@ class KeyFrame(Action, ConditionalAction):
                 unusedEulerY = Graph.api.setEntityPropertyValue(eulerYElem[0], "Angle", transformDict["rotationY"])
                 unusedEulerZ = Graph.api.setEntityPropertyValue(eulerZElem[0], "Angle", transformDict["rotationZ"])
         except Exception as e:
-            errorMsg = "Unknown error mapping euler transforms for keyframe object of action %s.  landmarkTransform = %s Traceback = %s" %(self.meme, landmarkTransform[1], e)
+            errorMsg = f"Unknown error mapping euler transforms for keyframe object of action {self.meme}.  landmarkTransform = {landmarkTransform[1]} Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
         finally: return True
     
@@ -2235,7 +2236,7 @@ class KeyFrame(Action, ConditionalAction):
                 unusedDeltaY = Graph.api.setEntityPropertyValue(offsetElem[0], "y", transformDict["deltaY"])
                 unusedDeltaZ = Graph.api.setEntityPropertyValue(offsetElem[0], "z", transformDict["deltaZ"])
         except Exception as e:
-            errorMsg = "Unknown error mapping delta transforms for keyframe object of action %s.  landmarkTransform = %s Traceback = %s" %(self.meme, landmarkTransform[1], e)
+            errorMsg = f"Unknown error mapping delta transforms for keyframe object of action {self.meme}.  landmarkTransform = {landmarkTransform[1]} Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
         finally: return True
         
@@ -2294,7 +2295,7 @@ class KeyFrame(Action, ConditionalAction):
                     viewList.remove(None)
                     return viewList
         except Exception as e:
-            errorMsg = "Unknown error selecting object entities for keyframe object of action %s.  rtParams = %s Traceback = %s" %(self.meme, rtParams, e)
+            errorMsg = f"Unknown error selecting object entities for keyframe object of action {self.meme}.  rtParams = {rtParams} Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
             return []
     # /objects
@@ -2308,7 +2309,7 @@ class KeyFrame(Action, ConditionalAction):
             stateChangeStimuli = Graph.api.map(self.mapFunctionStateChangesOuter, rtParams["objectID"], rtParams)
             self.conditionalStimuli.extend(stateChangeStimuli)
         except Exception as e:
-            errorMsg = "Unknown error changing states for keyframe object of action %s.  rtParams = %s Traceback = %s" %(self.meme, rtParams, e)
+            errorMsg = f"Unknown error changing states for keyframe object of action {self.meme}.  rtParams = {rtParams} Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
     #/ State Changes
     
@@ -2330,7 +2331,7 @@ class KeyFrame(Action, ConditionalAction):
                         stimulusMessage = StimulusMessage(conditionalStimulus, rtParams, [])
                     siQ.put(stimulusMessage)
         except Exception as e:
-            errorMsg = "Unknown error broadcasting stimuli for keyframe object of action %s.  Traceback = %s" %(self.meme, e)
+            errorMsg = f"Unknown error broadcasting stimuli for keyframe object of action {self.meme}.  Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
 
 
@@ -2340,7 +2341,7 @@ class KeyFrame(Action, ConditionalAction):
             #todo - refactor Graph.api.evaluateEntity to add objects
             Graph.api.evaluateEntity(self.uuid, rtParams, rtParams['actionID'], rtParams['subjectID'], rtParams['objectID'])
         except Exception as e:
-            errorMsg = "Unknown error invoking keyframe object of action %s.  Traceback = %s" %(self.meme, e)
+            errorMsg = f"Unknown error invoking keyframe object of action {self.meme}.  Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
         
 
@@ -2435,7 +2436,7 @@ def getActionIndexItem(toBeIndexed):
         actionMemes = Graph.api.getLinkCounterpartsByMetaMemeType(toBeIndexed, "Action.Throw")
         if len(actionMemes) > 0:
             memeName = Graph.api.getEntityMemeType(toBeIndexed)
-            errorMsg =  "Action %s is a Throw" %memeName
+            errorMsg =  f"Action {memeName} is a Throw"
             Graph.logQ.put( [logType , logLevel.DEBUG , method , errorMsg])
             try:
                 action = Throw()
@@ -2444,12 +2445,12 @@ def getActionIndexItem(toBeIndexed):
                 actionMeme = None
                 try: actionMeme = actionMemes[0]
                 except: pass
-                errorMsg = "Member Action.Throw entity %s is invalid" %actionMeme
+                errorMsg = f"Member Action.Throw entity {actionMeme} is invalid"
                 raise Exceptions.TemplatePathError(errorMsg)
         else:
             actionMemes = Graph.api.getLinkCounterpartsByMetaMemeType(toBeIndexed, "Action.Catch")
             if len(actionMemes) > 0:
-                errorMsg =  "Action %s is a Catch" %toBeIndexed
+                errorMsg =  f"Action {toBeIndexed} is a Catch"
                 Graph.logQ.put( [logType , logLevel.DEBUG , method , errorMsg])
                 try:
                     action = Catch()
@@ -2458,13 +2459,13 @@ def getActionIndexItem(toBeIndexed):
                     actionMeme = None
                     try: actionMeme = actionMemes[0]
                     except: pass
-                    errorMsg = "Member Action.Catch entity %s is invalid" %actionMeme
+                    errorMsg = f"Member Action.Catch entity {actionMeme} is invalid"
                     raise Exceptions.TemplatePathError(errorMsg)
             else:
                 memeName = Graph.api.getEntityMemeType(toBeIndexed)
                 actionMemes = Graph.api.getLinkCounterpartsByMetaMemeType(toBeIndexed, "Action.Choreography")
                 if len(actionMemes) > 0:
-                    errorMsg =  "Action %s is a Choreography" %memeName
+                    errorMsg =  f"Action {memeName} is a Choreography"
                     Graph.logQ.put( [logType , logLevel.DEBUG , method , errorMsg])
                     try:
                         action = ActionSet()
@@ -2473,12 +2474,12 @@ def getActionIndexItem(toBeIndexed):
                         actionMeme = None
                         try: actionMeme = actionMemes[0]
                         except: pass
-                        errorMsg = "Member Action.Choreography entity %s is invalid" %actionMeme
+                        errorMsg = f"Member Action.Choreography entity {actionMeme} is invalid"
                         raise Exceptions.TemplatePathError(errorMsg)
                 else:
                     actionMemes = Graph.api.getLinkCounterpartsByMetaMemeType(toBeIndexed, "Action.KeyFrame")
                     if len(actionMemes) > 0:
-                        errorMsg = "Action %s is a KeyFrame" %memeName
+                        errorMsg = f"Action {memeName} is a KeyFrame"
                         Graph.logQ.put( [logType , logLevel.DEBUG , method , errorMsg])
                         try:
                             action = KeyFrame()
@@ -2487,26 +2488,26 @@ def getActionIndexItem(toBeIndexed):
                             actionMeme = None
                             try: actionMeme = actionMemes[0]
                             except: pass
-                            errorMsg = "Member Action.KeyFrame entity %s is invalid" %actionMeme
+                            errorMsg = f"Member Action.KeyFrame entity {actionMeme} is invalid"
                             raise Exceptions.TemplatePathError(errorMsg)
                     else:
                         linkOverview = Graph.api.getEntityCounterparts(toBeIndexed)
-                        errorMsg = "Action %s has no valid child type.  Link overview = %s" %(memeName, linkOverview)
+                        errorMsg = f"Action {memeName} has no valid child type.  Link overview = {linkOverview}"
                         Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
         #now finish creating the action object
         action.bootstrap()
-        errorMsg = "Bootstrapped %s %s" %(type(action), action.meme)
+        errorMsg = f"Bootstrapped {type(action)} {action.meme}"
         Graph.logQ.put( [logType , logLevel.DEBUG , method , errorMsg])
         Graph.logQ.put( [logType , logLevel.DEBUG , method , " - exiting"])
         return action
     except Exceptions.ActionIndexerError as e:
         actionMeme = Graph.api.getEntityMemeType(toBeIndexed)
-        errorMsg = "Error in method while creating action index item %s.  Traceback = %s" %(actionMeme, e)
+        errorMsg = f"Error in method while creating action index item {actionMeme}.  Traceback = {e}"
         Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
         raise e        
     except Exception as e:
         actionMeme = Graph.api.getEntityMemeType(toBeIndexed)
-        errorMsg = "Error creating action index item %s.  Traceback = %s" %(actionMeme, e)
+        errorMsg = f"Error creating action index item {actionMeme}.  Traceback = {e}"
         Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
         raise e
 
@@ -2554,11 +2555,11 @@ class StimulusProfile(object):
         except Exceptions.MemeMembershipValidationError as e:
             pass
         except IndexError as e:
-            fullDescriptorPath = "%s%s" %(self.stimulusMeme, descriptorPath) 
-            errorMsg = "Stimulus %s has null descriptor at path %s.  Check the meme!" %(self.stimulusMeme, fullDescriptorPath)
+            fullDescriptorPath = f"{self.stimulusMeme}{descriptorPath}" 
+            errorMsg = f"Stimulus {self.stimulusMeme} has null descriptor at path {fullDescriptorPath}.  Check the meme!"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])             
         except Exception as e:
-            errorMsg = "Error while trying to resolve stimulus %s %s for agents %s.  Traceback = %s" %(self.stimulusMeme, self.stimulusID, self.agentSet, e)
+            errorMsg = f"Error while trying to resolve stimulus {self.stimulusMeme} {self.stimulusID} for agents {self.agentSet}.  Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])    
             
             
@@ -2676,7 +2677,7 @@ class Report(object):
                 orderedBucketList[prio] = stimulusProfile
                 
         else:
-            errorMsg = "The Stimulus Engine may only take the types Stimulus.Stimulus and Stimulus.StimulusChoice.  Stimulus Request contained a meme of metameme type %s" %metamemeType
+            errorMsg = f"The Stimulus Engine may only take the types Stimulus.Stimulus and Stimulus.StimulusChoice.  Stimulus Request contained a meme of metameme type {metamemeType}"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
             raise Exceptions.InvalidStimulusProcessingType(errorMsg)            
         self.buckets = orderedBucketList    
@@ -2710,7 +2711,7 @@ class Report(object):
                             stimulusProfile.agentSet.update(stimulusAgentsSet)
                         except Exception as e:
                             pass
-                        logMessage = "Stimulus Agents that can view scope of message: = %s" %(stimulusAgentsSet)
+                        logMessage = f"Stimulus Agents that can view scope of message: = {stimulusAgentsSet}"
                         Graph.logQ.put( [logType , logLevel.DEBUG , method , logMessage])
                     else:
                         fullAgentSet = set([])
@@ -2756,7 +2757,7 @@ class Report(object):
                         stimulusMeme = Graph.api.getEntityMemeType(stimulusProfile.stimulusID)
                     except Exception as e: 
                         pass
-                    errorMsg = "Unknown error testing condition %s on stimulus %s.  Traceback = %s" %(conditionMeme, stimulusMeme, e)
+                    errorMsg = f"Unknown error testing condition {conditionMeme} on stimulus {stimulusMeme}.  Traceback = {e}"
                     Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
                     return False
                 
@@ -2809,7 +2810,7 @@ class Report(object):
                     stimulusMeme = Graph.api.getEntityMemeType(stimulusProfile.stimulusID)
                     errorMsg = "Can't normalize conditional stimulus %s agent set with regard to lower prio stimuli.  %s lower prio stimuli unnormalized.  Traceback = %s" %(stimulusMeme, remaining, e)
                 except Exception as ee:
-                    errorMsg = "Unexpected error %s occurred while trying to normalized conditional stimulus set.  Traceback = %s" %(ee, e)
+                    errorMsg = f"Unexpected error {ee} occurred while trying to normalized conditional stimulus set.  Traceback = {e}"
                 finally:
                     Graph.logQ.put( [logType , logLevel.ERROR , method , errorMsg])
             
@@ -2846,7 +2847,7 @@ class StimulusEngine(ServicePlugin):
             self.startupIndexingFinished = False
             threading.Thread.__init__(self, name = "StimulusEngine")
         except Exception as e:
-            errorMsg = "Fatal Error while starting Stimulus Engine. Traceback = %s" %e
+            errorMsg = f"Fatal Error while starting Stimulus Engine. Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.ERROR , method , errorMsg])
         #Graph.logQ.put( [logType , logLevel.DEBUG , method , "exiting"])
         
@@ -2882,10 +2883,10 @@ class StimulusEngine(ServicePlugin):
                         else: 
                             self.exit()
                     except Exception as e:
-                        errorMsg = "Unknown error while trying to process stimulus.  Traceback = %s" %e
+                        errorMsg = f"Unknown error while trying to process stimulus.  Traceback = {e}"
                         Graph.logQ.put( [logType , logLevel.ERROR , method , errorMsg])
             except Exception as e:
-                errorMsg = "Unknown error in stimulus engine.  Traceback = %s" %e
+                errorMsg = f"Unknown error in stimulus engine.  Traceback = {e}"
                 Graph.logQ.put( [logType , logLevel.ERROR , method , errorMsg])                
 
 
@@ -2947,11 +2948,11 @@ class StimulusEngine(ServicePlugin):
                             #Graph.logQ.put( [logType , logLevel.WARNING, method , theMsg])
             except Exceptions.NoSuchBroadcasterError as e:
                 memePath = Graph.api.getEntityMemeType(stimulusSignal.stimulusID)
-                errorMsg = "Stimulus %s has no broadcaster.  Traceback = %s" %(memePath, e)
+                errorMsg = f"Stimulus {memePath} has no broadcaster.  Traceback = {e}"
                 Graph.logQ.put( [logType , logLevel.ERROR, method , errorMsg])
             except Exceptions.NullBroadcasterIDError as e:
                 memePath = Graph.api.getEntityMemeType(stimulusSignal.stimulusID)
-                errorMsg = "Stimulus %s has no broadcaster.  Traceback = %s" %(memePath, e)
+                errorMsg = f"Stimulus {memePath} has no broadcaster.  Traceback = {e}"
                 Graph.logQ.put( [logType , logLevel.ERROR, method , errorMsg])
             except Exception as e:
                 pass
@@ -2961,7 +2962,7 @@ class StimulusEngine(ServicePlugin):
             try:
                 stimulusSignalMeme = Graph.api.getEntityMemeType(stimulusSignal.stimulusID)
             except: pass
-            errorMessage = "Error processing stimulus %s for agentlist %s.  Traceback = %s" %(stimulusSignalMeme, stimulusSignal.targetAgents, e)
+            errorMessage = f"Error processing stimulus {stimulusSignalMeme} for agentlist {stimulusSignal.targetAgents}.  Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMessage])
 
 
@@ -2986,10 +2987,10 @@ class StimulusEngine(ServicePlugin):
                 self.server.register_function(self.getStimulus, 'putStimulus')
             
             #Go into the main listener loop
-            Graph.logQ.put( [logType , logLevel.ADMIN , method , "Main process plugin thread %s is listening an an XML RPC server on port %s" %(self.pluginName, self.portID)])
+            Graph.logQ.put( [logType , logLevel.ADMIN , method , f"Main process plugin thread {self.pluginName} is listening an an XML RPC server on port {self.portID}"])
             self.server.serve_forever()
         except Exception as e:
-            Graph.logQ.put( [logType , logLevel.ERROR , method , "Main process plugin thread % unable to start!!!  Traceback = %s" %(self.pluginName, e)])
+            Graph.logQ.put( [logType , logLevel.ERROR , method , f"Main process plugin thread % unable to start!!!  Traceback = {self.pluginName}"])
             #Graph.logQ.put( [logType , logLevel.DEBUG , method , "exiting"])
     """
 
@@ -3003,7 +3004,7 @@ class StimulusEngine(ServicePlugin):
         
         numberOfStimuli = stimulusIndexerQ.qsize()
 
-        Graph.logQ.put( [logType , logLevel.INFO , methodName, "Descriptor (broadcaster) Indexer - Found %s descriptors to index" %(numberOfStimuli)])
+        Graph.logQ.put( [logType , logLevel.INFO , methodName, f"Descriptor (broadcaster) Indexer - Found {numberOfStimuli} descriptors to index"])
         while self.startupIndexingFinished == False:
             try:
                 stimulusToBeIndexed = stimulusIndexerQ.get_nowait()
@@ -3012,16 +3013,16 @@ class StimulusEngine(ServicePlugin):
                     nTh = nTh + 1
                 except Exception as e:
                     stimulusMeme = Graph.api.getEntityMetaMemeType(stimulusToBeIndexed)
-                    Graph.logQ.put( [logType , logLevel.ERROR , methodName, "Descriptor (broadcaster) Indexer - Problem indexing stimulus %s.  Traceback = %s" %(stimulusMeme, e)])
+                    Graph.logQ.put( [logType , logLevel.ERROR , methodName, f"Descriptor (broadcaster) Indexer - Problem indexing stimulus {stimulusMeme}.  Traceback = {e}"])
             except queue.Empty:
                 self.startupIndexingFinished = True
                 endTime = time.time()
                 deltaT = endTime - startTime
                 Graph.logQ.put( [logType , logLevel.INFO , methodName, "Descriptor (broadcaster) Indexer - Finished initial loading from engine stimulus indexer queue"])
-                Graph.logQ.put( [logType , logLevel.INFO , methodName, "Descriptor (broadcaster) Indexer - Indexed %s descriptors in %s seconds" %(nTh, deltaT)])
+                Graph.logQ.put( [logType , logLevel.INFO , methodName, f"Descriptor (broadcaster) Indexer - Indexed {nTh} descriptors in {deltaT} seconds"])
             except Exception as e:
                 self.startupIndexingFinished = True
-                Graph.logQ.put( [logType , logLevel.ERROR , methodName, "Descriptor (broadcaster) Indexer - Unknown Error.  Traceback = %s" %e])
+                Graph.logQ.put( [logType , logLevel.ERROR , methodName, f"Descriptor (broadcaster) Indexer - Unknown Error.  Traceback = {e}"])
                 self._stopevent.wait(self._sleepperiod)
             
 
@@ -3063,7 +3064,7 @@ class ConditionProcessor(object):
         try:
             conditionID = argumentMap["conditionID"]
         except Exception as e:
-            errorMsg = "Conditional Stimulus with undeclared condition on agent %s.  Traceback = %s" %(agentID, e)
+            errorMsg = f"Conditional Stimulus with undeclared condition on agent {agentID}.  Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
         
         try: actionID = argumentMap["actionID"]
@@ -3079,7 +3080,7 @@ class ConditionProcessor(object):
                 returnVal = agentID
             return returnVal  
         except Exception as e:
-            errorMsg = "Unknown error testing individual condition %s on agent %s.  Traceback = %s" %(argumentMap["conditionID"], agentID, e)
+            errorMsg = f"Unknown error testing individual condition {argumentMap["conditionID"]} on agent {agentID}.  Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
             return False
     
@@ -3106,7 +3107,7 @@ class ConditionProcessor(object):
                 conditionMeme = Graph.api.getEntityMemeType(conditionID)
                 stimulusMeme = Graph.api.getEntityMemeType(stimulusID)
             except: pass
-            errorMsg = "Unknown error testing %s agents in scope for conditions %s on stimulus %s.  Traceback = %s" %(len(okAgents), conditionMeme, stimulusMeme, e)
+            errorMsg = f"Unknown error testing {len(okAgents)} agents in scope for conditions {conditionMeme} on stimulus {stimulusMeme}.  Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
             return set([])
         #Python's map/reduce functionality sometimes turns empty lists into None values. Remove them 
@@ -3144,7 +3145,7 @@ class ConditionProcessor(object):
         except Exceptions.ScriptError as e:
             Graph.logQ.put( [logType , logLevel.WARNING , method , e])
         except Exception as e:
-            errorMsg = "Unknown error selecting observer agents for stimulus %s.  rtParams = %s Traceback = %s" %(stimulusID, e)
+            errorMsg = f"Unknown error selecting observer agents for stimulus {stimulusID}.  rtParams = {e} Traceback = %s"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
             return set([])
     # /objects
@@ -3171,7 +3172,7 @@ class Engine(object):
         self.processName= processName
         self.noMainRepo = False
         self.broadcasters = {'default' : {'memes' : ['*'], 'metaMemes' : ['*']}}
-        self.startupState = StartupState()
+        self.startupState = StartupState.INITIAL_STATE
         self.serverState = 0
         self.validateOnLoad = validateOnLoad 
         self.api = Graph.api.getAPI()
@@ -3260,7 +3261,7 @@ class Engine(object):
 
         for queueName in self.engineQueues.keys():
             loadQueue = self.engineQueues[queueName]
-            Graph.logQ.put( [logType , logLevel.ADMIN , method , "Creating queue %s, template loader = %s" %(queueName, loadQueue)])
+            Graph.logQ.put( [logType , logLevel.ADMIN , method , f"Creating queue {queueName}, template loader = {loadQueue}"])
             newQueue = queue.Queue()
             #queues[queueName] = newQueue
             queues.__setattr__(queueName, newQueue)
@@ -3285,23 +3286,23 @@ class Engine(object):
                 print(errorMessage)
                 raise Exceptions.TemplatePathError(errorMessage)
         
-        Graph.logQ.put( [logType , logLevel.INFO , method , "Python Path %s" %(sys.path)])
+        Graph.logQ.put( [logType , logLevel.INFO , method , f"Python Path {sys.path}"])
         
         for repoDir in self.additionalRepos:
-            Graph.logQ.put( [logType , logLevel.INFO , method , "Memetic Repository at %s" %(repoDir)])
+            Graph.logQ.put( [logType , logLevel.INFO , method , f"Memetic Repository at {repoDir}"])
         
         #syndicate all data to the load queues
         for packagePath in objectMap.keys():
             try:
-                Graph.logQ.put( [logType , logLevel.INFO , method , "Memetic Repository Module %s" %(packagePath)])
-                print(("module = %s" %(packagePath)))
+                Graph.logQ.put( [logType , logLevel.INFO , method , f"Memetic Repository Module {packagePath}"])
+                print((f"module = {packagePath}"))
                 fileData = objectMap[packagePath]
                 for fileStream in fileData.keys():
                     codepage = fileData[fileStream]
                     streamData = [fileStream, codepage, packagePath]
                     queues.syndicate(streamData)
             except Exception as e:
-                Graph.logQ.put( [logType , logLevel.ERROR , method , "problem syndicating file in repository %s.  Traceback = %s" %(packagePath, e)])
+                Graph.logQ.put( [logType , logLevel.ERROR , method , f"problem syndicating file in repository {packagePath}.  Traceback = {e}"])
  
 
         # Monkey Patching Alert!  We will decorate the Graphyne.Graph.Scriptacade class with additional script commands before initializing it
@@ -3334,7 +3335,7 @@ class Engine(object):
         #tiogaRepo = os.path.join(myLocation, "IntentsityRepository")
         #self.additionalRepos.append(tiogaRepo)
         
-        self.serverState = self.startupState.GRAPH_STARING
+        self.serverState = StartupState.GRAPH_STARING
                             
         Graph.startLogger(lLevel, "utf-8", True, self.persistenceType)
         Graph.startDB(self.additionalRepos, self.persistenceType, self.persistenceArg, True, resetDatabase, False, validateOnLoad)
@@ -3361,7 +3362,7 @@ class Engine(object):
                      
         #now, we should make sure that all singleton memes are instantiated.
         Graph.logQ.put( [logType , logLevel.INFO , method ,"Loading Action and Stimulus Indexers"])
-        self.serverState = self.startupState.INDEXING_MOLECULES
+        self.serverState = StartupState.INDEXING_MOLECULES
         actions = self.api.getEntitiesByMetaMemeType("Action.Action")
         for actionID in actions:
             actionIndexerQ.put(actionID)
@@ -3371,8 +3372,8 @@ class Engine(object):
             stimulusIndexerQ.put(desriptorID)
         Graph.logQ.put( [logType , logLevel.INFO , method ,"Finished initial loading of Action and Stimulus Indexers"])
         
-        
-        self.serverState = self.startupState.STARTING_SERVICES
+
+        self.serverState = StartupState.STARTING_SERVICES
         #Now we can start the service plugins
         Graph.logQ.put( [logType , logLevel.ADMIN , method , "starting engine services"])
         self.actionEngine = ActionEngine()
@@ -3388,7 +3389,7 @@ class Engine(object):
                     description = broadcasterDefinition["description"]
                     unusedReturn = Graph.api.sourceMemePropertySet(entityCreationReport["memeID"], "description", description)
                 except Exception as e:
-                    errprMessage = "Broadcaster definition %s has no description" %broadcasterName
+                    errprMessage = f"Broadcaster definition {broadcasterName} has no description"
                     Graph.logQ.put( [logType , logLevel.INFO , method , errprMessage])
                     unusedReturn = Graph.api.sourceMemePropertySet(entityCreationReport["memeID"], "description", "")
                 broadcasterEntityID = Graph.api.createEntityFromMeme(entityCreationReport["memeID"])
@@ -3397,7 +3398,7 @@ class Engine(object):
                 fullerror = sys.exc_info()
                 errorID = str(fullerror[0])
                 errorMsg = str(fullerror[1])
-                Graph.logQ.put( [logType , logLevel.ERROR , method , "Problem indexing broadcaster %s.  Error ID = %s.  Traceback = %s" %(broadcasterName, errorID, errorMsg)])
+                Graph.logQ.put( [logType , logLevel.ERROR , method , f"Problem indexing broadcaster {broadcasterName}.  Error ID = {errorID}.  Traceback = {errorMsg}"])
         
         self.actionEngine.initialize(None, {'heatbeatTick' : 1}, self.rtParams)
         self.actionEngine.start()
@@ -3415,14 +3416,14 @@ class Engine(object):
                 service = tmpClass()
                 #apiCopy = copy.deepcopy(api)
                 service.initialize(Graph.api, dtParams, self.rtParams)
-                print(("starting = %s" %service.__class__))
+                print((f"starting = {service.__class__}"))
                 service.start()
                 self.services.append(service)
                 self.threadNames.append(service.getName())
-                Graph.logQ.put( [logType , logLevel.ADMIN , method , "starting %s as thread ID %s" %(service.__class__, service.getName())])
+                Graph.logQ.put( [logType , logLevel.ADMIN , method , f"starting {service.__class__} as thread ID {service.getName()}"])
             except Exception as e:
-                print(("Failed to start Plugin %s.  Traceback = %s" %(str(engineService), e)))
-                Graph.logQ.put( [logType , logLevel.ERROR , method , "Failed to start Plugin %s.  Traceback = %s" %(str(engineService), e)])
+                print((f"Failed to start Plugin {str(engineService)}.  Traceback = {e}"))
+                Graph.logQ.put( [logType , logLevel.ERROR , method , f"Failed to start Plugin {str(engineService)}.  Traceback = {e}"])
         Graph.logQ.put( [logType , logLevel.ADMIN , method , "finished starting engine services"])
         print("finished starting engine services")
         
@@ -3449,8 +3450,8 @@ class Engine(object):
             tmpClass = getattr(engineService, 'Plugin')
             service = tmpClass()
             service.initialize(dtParams, self.rtParams)
-            Graph.logQ.put( [logType , logLevel.ADMIN , method , "starting %s" %service.__class__])
-            print(("starting = %s" %service.__class__))
+            Graph.logQ.put( [logType , logLevel.ADMIN , method , f"starting {service.__class__}"])
+            print((f"starting = {service.__class__}"))
             service.start()
             self.initServices.append(service)
             #except Exception as e:
@@ -3468,12 +3469,12 @@ class Engine(object):
                 tmpClass = getattr(util, 'Plugin')
                 service = tmpClass()
                 service.initialize(dtParams, self.rtParams)
-                Graph.logQ.put( [logType , logLevel.ADMIN , method , "executing %s" %tmpClass.__class__])
-                print(("executing = %s" %service.__class__))
+                Graph.logQ.put( [logType , logLevel.ADMIN , method , f"executing {tmpClass.__class__}"])
+                print((f"executing = {service.__class__}"))
                 service.execute()
             except Exception as e:
-                print(("Failed to start Plugin %s.  Traceback = %s" %(str(engineService), e)))
-                Graph.logQ.put( [logType , logLevel.ERROR , method , "Failed to start Plugin %s.  Traceback = %s" %(str(engineService), e)])
+                print((f"Failed to start Plugin {str(engineService)}.  Traceback = {e}"))
+                Graph.logQ.put( [logType , logLevel.ERROR , method , f"Failed to start Plugin {str(engineService)}.  Traceback = {e}"])
         Graph.logQ.put( [logType , logLevel.ADMIN , method , "finished executing initialization plugins"])
         print("finished executing initialization plugins")
         
@@ -3482,11 +3483,11 @@ class Engine(object):
         Graph.logQ.put( [logType , logLevel.ADMIN , method , "shutting down initialization services"])
         print("shutting down initialization services")
         for initService in self.initServices:
-            print(("stopping %s" %service.__class__))
+            print((f"stopping {service.__class__}"))
             initService.join()
         Graph.logQ.put( [logType , logLevel.ADMIN , method , "finished shuting down initialization services"])
         print("finished shuting down initialization services")
-        self.serverState = self.startupState.READY_TO_SERVE
+        self.serverState = StartupState.READY_TO_SERVE
         #Graph.logQ.put( [logType , logLevel.DEBUG , method , "exiting"])
         
         
@@ -3505,13 +3506,13 @@ class Engine(object):
             pass
         try:
             for service in self.services:
-                print("stopping %s thread ID %s %s" %(service.__class__, service._name, service.name))
+                print(f"stopping {service.__class__} thread ID {service._name} {service.name}")
                 try:
                     service.join()
                     service.killServers()
                     service.join()
                 except Exception as e:
-                    print(( 'Exception while waiting for service thread to shut down. Traceback = %s' %(e)))
+                    print(( f'Exception while waiting for service thread to shut down. Traceback = {e}'))
         except AttributeError:
             pass        
         print("Shutdown Started.  Waiting sixty seconds to allow log and database queues to be cleared before shutting archive services down.")
@@ -3522,7 +3523,7 @@ class Engine(object):
             if len(threading.enumerate()) > 0:
                 self.shutdownWait()
         except Exception as e:
-            print(( 'Exception while waiting for child threads to shut down. Traceback = %s' %(e)))
+            print(( f'Exception while waiting for child threads to shut down. Traceback = {e}'))
         
         Graph.stopLogger()            
         print("Finished shutting down service and archive plugins.  Shutting Down engine")
@@ -3545,7 +3546,7 @@ class Engine(object):
                 continue
             elif threadName in self.threadNames:
                 canStopNow = False
-                print(( 'Engine waiting for thread %s to finish shutting down' %threadName))   
+                print(( f'Engine waiting for thread {threadName} to finish shutting down'))   
         if canStopNow == False:
             time.sleep(6.0)    
             self.shutdown()
@@ -3561,10 +3562,10 @@ aQ = queue.Queue() # action queue
 siQ = queue.Queue()
 actionIndexerQ = queue.Queue()
 stimulusIndexerQ = queue.Queue()
-stagingQ = queue.Queue() 
-logType = LogType()
-logLevel = LogLevel()     
-linkTypes = LinkType()  
+stagingQ = queue.Queue()
+logType = LogType
+logLevel = LogLevel
+linkTypes = LinkType  
 
 
 broadcasterRegistrar = BroadcasterRegistrar()
@@ -3590,7 +3591,7 @@ def getUUIDAsString(uuidToParse):
             uuidAsString = partStringURN[2]
             return uuidAsString
     except Exception as e:
-        return "Traceback = %s" %e  
+        return f"Traceback = {e}"  
 
 
 def filterListDuplicates(listToFilter):

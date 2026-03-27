@@ -20,7 +20,7 @@ initUtils = []
 services = {}
 utilities = {}
 logType = Graph.logTypes.ENGINE
-logLevel = Graph.LogLevel()
+logLevel = Graph.LogLevel
 
 
 
@@ -72,8 +72,8 @@ def initPlugins(plugins):
         plugin['moduleName'] = os.path.splitext(os.path.basename(__file__))[0]
         plugin['params'] = dtParams
 
-        
-        Graph.logQ.put( [logType , logLevel.INFO , method , '....%s plugin from module %s cataloged as %s' %(pluginType, modName, name)])
+
+        Graph.logQ.put( [logType , logLevel.INFO , method , f'....{pluginType} plugin from module {modName} cataloged as {name}'])
         if pluginType == "EngineService":
             engineServices.append(plugin)
         elif pluginType == "ArchiveService":

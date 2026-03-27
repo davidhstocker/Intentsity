@@ -60,7 +60,7 @@ class Plugin(Engine.Broadcaster):
                 fullerror = sys.exc_info()
                 errorID = str(fullerror[0])
                 errorMsg = str(fullerror[1])
-                responseMessage = "Error on starting regression test broadcaster %s.  %s, %s" %(self.broadcasterID, errorID, errorMsg)
+                responseMessage = f"Error on starting regression test broadcaster {self.broadcasterID}.  {errorID}, {errorMsg}"
                 tb = sys.exc_info()[2]
                 raise ValueError(responseMessage).with_traceback(tb)
          
@@ -75,7 +75,7 @@ class Plugin(Engine.Broadcaster):
 
 
 #Globals
-moduleName = 'RegressionTestBroadcaster' 
+moduleName = 'RegressionTestBroadcaster'
 logType = Graph.logTypes.CONTENT
-logLevel = Graph.LogLevel()  
+logLevel = Graph.LogLevel  
 

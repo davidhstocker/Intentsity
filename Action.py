@@ -18,7 +18,7 @@ from ... import Exceptions
 
 #globals
 moduleName = 'ActionEngine.Action'
-actionInsertionTypes = Engine.ActionInsertionType()
+actionInsertionTypes = Engine.ActionInsertionType
 
 
 class LogProxy(object):
@@ -45,7 +45,7 @@ class LogProxy(object):
 class APIProxy(object):
         
     def getEntityMemeType(self, entityUUID):
-        getEntityMemeTypeURL = self.serverURL + "/modeling/getEntityMemeType/%s" %entityUUID
+        getEntityMemeTypeURL = self.serverURL + f"/modeling/getEntityMemeType/{entityUUID}"
         #urllib GET request
         getTypeResponse = urllib.request.urlopen(getEntityMemeTypeURL)  
         getTypeResponseJsonB = getTypeResponse.read()
@@ -82,7 +82,7 @@ class APIProxy(object):
             return False
         
     def getEntityPropertyValue(self, entityUUID, propName):
-        getEntityPropValURL = self.serverURL + "/modeling/getEntityPropertyValue/%s/%s" %(entityUUID, propName)
+        getEntityPropValURL = self.serverURL + f"/modeling/getEntityPropertyValue/{entityUUID}/{propName}"
         #urllib GET request
         getValResponse = urllib.request.urlopen(getEntityPropValURL)  
         getValResponseJsonB = getValResponse.read()
@@ -112,7 +112,7 @@ class Action(object):
             self.actionID = actionID
             self.instanceID = None
         except Exception as e:
-            errorMsg = "Unknown error initializing action %s.  Traceback = %s" %(actionID, e)
+            errorMsg = f"Unknown error initializing action {actionID}.  Traceback = {e}"
             logProxy.log(logProxy.logType, logProxy.WARNING , method , errorMsg)
         #logProxy.log(logProxy.logType, logProxy.DEBUG , method , "exiting"])
         
@@ -130,7 +130,7 @@ class Action(object):
         try:
             self.instanceID = uuid.uuid1()
         except Exception as e:
-            errorMsg = "Unknown error refreshing instance UUID on action %s.  Traceback = %s" %(self.meme, e)
+            errorMsg = f"Unknown error refreshing instance UUID on action {self.meme}.  Traceback = {e}"
             logProxy.log(logProxy.logType, logProxy.WARNING , method , errorMsg)
         
             
@@ -186,13 +186,13 @@ class Action(object):
                     masterLandmarkList = apiProxy.getLinkCounterpartsByMetaMemeType(self.uuid, lmMPath)
                     self.masterLandmark = masterLandmarkList[0]
                 except Exception as e:
-                    errorMsg = "Action %s has no master landmark defined" %self.meme
+                    errorMsg = f"Action {self.meme} has no master landmark defined"
                     raise Exceptions.MemeMembershipValidationError(errorMsg)
             except Exceptions.MemeMembershipValidationError as e:
                 raise e
             except Exception as e:
                 masterLandmarkList = apiProxy.getLinkCounterpartsByMetaMemeType(self.uuid, lmMPath)
-                errorMsg = "Action %s has no master landmark defined" %self.meme
+                errorMsg = f"Action {self.meme} has no master landmark defined"
                 raise Exceptions.MemeMembershipValidationError(errorMsg)
             
             #Remote Debugger
@@ -242,7 +242,7 @@ class Action(object):
             errorID = str(fullerror[0])
             errorMsg = str(fullerror[1])
             #tb = sys.exc_info()[2]
-            errorMsg = "Error adding landmarks to keyframe object of action %s.  Traceback = %s, %s" %(self.meme, errorID, errorMsg)
+            errorMsg = f"Error adding landmarks to keyframe object of action {self.meme}.  Traceback = {errorID}, {errorMsg}"
             logProxy.log(logProxy.logType, logProxy.WARNING , method , errorMsg)
         #logProxy.log(logProxy.logType, logProxy.DEBUG , method , "exiting"])
             
@@ -287,7 +287,7 @@ class Action(object):
             if False not in allLandmarks:
                 allTrue = True
         except Exception as e:
-            errorMsg = "Unknown error checking landmarks for keyframe object of action %s.  Traceback = %s" %(self.meme, e)
+            errorMsg = f"Unknown error checking landmarks for keyframe object of action {self.meme}.  Traceback = {e}"
             logProxy.log(logProxy.logType, logProxy.WARNING , method , errorMsg)
         finally: return allTrue    
     
@@ -297,7 +297,7 @@ class Action(object):
             exTrue = script.map(self.mapFunctionLandmarks, self.landmarksExclusive, agentUUID)
             return exTrue
         except Exception as e:
-            errorMsg = "Unknown error checking exclusive landmarks for keyframe object of action %s.  Traceback = %s" %(self.meme, e)
+            errorMsg = f"Unknown error checking exclusive landmarks for keyframe object of action {self.meme}.  Traceback = {e}"
             logProxy.log(logProxy.logType, logProxy.WARNING , method , errorMsg)
             return False
         
@@ -309,7 +309,7 @@ class Action(object):
             localResult = apiProxy.getHasCounterpartsByType(agentUUID, landMarkPath)
             return localResult 
         except Exception as e:
-            errorMsg = "Unknown error mapping landmark %s for keyframe object of action %s.  Traceback = %s" %(landMarkPath, self.meme, e)
+            errorMsg = f"Unknown error mapping landmark {landMarkPath} for keyframe object of action {self.meme}.  Traceback = {e}"
             logProxy.log(logProxy.logType, logProxy.WARNING , method , errorMsg)
             return False   
         
@@ -333,13 +333,13 @@ class ConditionalAction(object):
             conditionPath = "Graphyne.Condition.Condition"
             conditionElements = apiProxy.getLinkCounterpartsByMetaMemeType(self.uuid, conditionPath)
             for conditionElement in conditionElements:
-                logProxy.log(logProxy.logType, logProxy.DEBUG , method , "adding condition %s to action %s" %(conditionElement, self.uuid))
+                logProxy.log(logProxy.logType, logProxy.DEBUG , method , f"adding condition {conditionElement} to action {self.uuid}")
                 self.conditions.append(conditionElement)
         except Exception as e:
             actionID = None
             try: actionID = self.meme
             except: pass
-            errorMsg = "Unknown error adding conditions to action %s.  Traceback = %s" %(actionID, e)
+            errorMsg = f"Unknown error adding conditions to action {actionID}.  Traceback = {e}"
             logProxy.log(logProxy.logType, logProxy.WARNING , method , errorMsg)
         #logProxy.log(logProxy.logType, logProxy.DEBUG , method , "exiting"])
             
@@ -353,7 +353,7 @@ class ConditionalAction(object):
             actionID = None
             try: actionID = self.meme
             except: pass
-            errorMsg = "Unknown error testing individual condition on action %s.  Traceback = %s" %(actionID, e)
+            errorMsg = f"Unknown error testing individual condition on action {actionID}.  Traceback = {e}"
             logProxy.log(logProxy.logType, logProxy.WARNING , method , errorMsg)
             return False
     
@@ -370,7 +370,7 @@ class ConditionalAction(object):
             actionID = None
             try: actionID = self.meme
             except: pass
-            errorMsg = "Unknown error testing conditions on action %s.  Traceback = %s" %(actionID, e)
+            errorMsg = f"Unknown error testing conditions on action {actionID}.  Traceback = {e}"
             logProxy.log(logProxy.logType, logProxy.WARNING , method , errorMsg)
             return False
     
@@ -418,14 +418,14 @@ class ActionSet(Action):
                         #/debug
                         self.packedMemberList.append(sortedMember)
                 except Exception as e:
-                    errorMsg = "Unknown error setting up ChoreographyStep members on action %s.Traceback = %s" %(self.meme, e)
+                    errorMsg = f"Unknown error setting up ChoreographyStep members on action {self.meme}.Traceback = {e}"
                     sortedMember = script.getEntityMemeType(sortedMemberUUID)
                     logProxy.log(logProxy.logType, logProxy.WARNING , method , errorMsg)
             except Exception as e:
                 #level 2
                 pass
         except Exception as e:
-            errorMsg = "Unknown error bootstrapping choreography %s.  Traceback = %s" %(self.meme, e)
+            errorMsg = f"Unknown error bootstrapping choreography {self.meme}.  Traceback = {e}"
             logProxy.log(logProxy.logType, logProxy.WARNING , method , errorMsg)
             #debug
             try:
@@ -468,7 +468,7 @@ class ActionSet(Action):
                 memberEntityMembers = memberEntity.getInflatedMemberList(script)
                 returnList.extend(memberEntityMembers)
             except AssertionError:
-                errorMessage = "Action set %s has member %s, which is not indexed in action engine" %(self.meme, taskItem)
+                errorMessage = f"Action set {self.meme} has member {taskItem}, which is not indexed in action engine"
                 logProxy.log(logProxy.logType, logProxy.ERROR , method , errorMessage)
         #debug
         #debugMessage = "Action set %s has the following members: %s" %(self.meme, returnList)
@@ -506,7 +506,7 @@ class KeyFrame(Action, ConditionalAction):
             conditionPath = "Action.ObjectSelectionCondition::Graphyne.Condition.Condition"
             self.objectSelectionConditions = script.getLinkCounterpartsByMetaMemeType(self.uuid, conditionPath)
         except Exception as e:
-            errorMsg = "Unknown error adding object selection conditions to keyframe object of action %s.  Traceback = %s" %(self.meme, e)
+            errorMsg = f"Unknown error adding object selection conditions to keyframe object of action {self.meme}.  Traceback = {e}"
             logProxy.log(logProxy.logType, logProxy.WARNING , method , errorMsg)
 
         
@@ -593,7 +593,7 @@ class KeyFrame(Action, ConditionalAction):
                     for prio in prioList:
                         self.stateChangeSuccessor.append(tempMap[prio])
         except Exception as e:
-            errorMsg = "Unknown error adding state change information to kexframe object of action %s.  Traceback = %s" %(self.meme, e)
+            errorMsg = f"Unknown error adding state change information to kexframe object of action {self.meme}.  Traceback = {e}"
             logProxy.log(logProxy.logType, logProxy.WARNING , method , errorMsg)
 
         
@@ -605,7 +605,7 @@ class KeyFrame(Action, ConditionalAction):
         try:
             self.conditionalStimuli = self.getConditionalStimuli(script, self.uuid)
         except Exception as e:
-            errorMsg = "Unknown error adding stimuli information to keyframe object of action %s.  Traceback = %s" %(self.meme, e)
+            errorMsg = f"Unknown error adding stimuli information to keyframe object of action {self.meme}.  Traceback = {e}"
             logProxy.log(logProxy.logType, logProxy.WARNING , method , errorMsg)
         
         
@@ -624,7 +624,7 @@ class KeyFrame(Action, ConditionalAction):
             conditionalStimuli = script.getLinkCounterpartsByMetaMemeType(rootNodeID, "Stimulus.StimulusChoice")
             return conditionalStimuli
         except Exception as e:
-            errorMsg = "Unknown error getting conditional stimuli for keyframe object of action %s.  Traceback = %s" %(self.meme, e)
+            errorMsg = f"Unknown error getting conditional stimuli for keyframe object of action {self.meme}.  Traceback = {e}"
             logProxy.log(logProxy.logType, logProxy.WARNING , method , errorMsg)
             return []
     
@@ -644,7 +644,7 @@ class KeyFrame(Action, ConditionalAction):
             self.controllerBlacklist = controllerBlacklist
             self.controllerWhitelist = controllerWhitelist
         except Exception as e:
-            errorMsg = "Unknown error adding controllers to keyframe object of action %s.  Traceback = %s" %(self.meme, e)
+            errorMsg = f"Unknown error adding controllers to keyframe object of action {self.meme}.  Traceback = {e}"
             logProxy.log(logProxy.logType, logProxy.WARNING , method , errorMsg)
         
         
@@ -657,7 +657,7 @@ class KeyFrame(Action, ConditionalAction):
             if len(timescaleElem) > 1:
                 self.timescale = timescaleElem[0]
         except Exception as e:
-            errorMsg = "Unknown error adding tiimescale to keyframe object of action %s.  Traceback = %s" %(self.meme, e)
+            errorMsg = f"Unknown error adding tiimescale to keyframe object of action {self.meme}.  Traceback = {e}"
             logProxy.log(logProxy.logType, logProxy.WARNING , method , errorMsg)
             
             
@@ -670,7 +670,7 @@ class KeyFrame(Action, ConditionalAction):
             if len(viewElem) > 1:
                 self.view = viewElem[0]
         except Exception as e:
-            errorMsg = "Unknown error adding view to keyframe object of action %s.  Traceback = %s" %(self.meme, e)
+            errorMsg = f"Unknown error adding view to keyframe object of action {self.meme}.  Traceback = {e}"
             logProxy.log(logProxy.logType, logProxy.WARNING , method , errorMsg)
         
 
@@ -698,7 +698,7 @@ class KeyFrame(Action, ConditionalAction):
             except copy.Error as e:
                 raise e
             except Exception as e:
-                errorMsg = "Copy Error.  Traceback = %s" %(e)
+                errorMsg = f"Copy Error.  Traceback = {e}"
                 raise Exception(errorMsg)
             argumentMap["objectID"] = objectID
             localResult = None
@@ -707,7 +707,7 @@ class KeyFrame(Action, ConditionalAction):
                 localResult = objectID
             return localResult    
         except Exception as e:
-            errorMsg = "Unknown error mapping objects for keyframe object of action %s.  rtparams = %s Traceback = %s" %(self.meme, rtParams, e)
+            errorMsg = f"Unknown error mapping objects for keyframe object of action {self.meme}.  rtparams = {rtParams} Traceback = {e}"
             logProxy.log(logProxy.logType, logProxy.WARNING , method , errorMsg)
             return None
     
@@ -719,7 +719,7 @@ class KeyFrame(Action, ConditionalAction):
             transformResult = self.checkEulerAngles(landmarkTransform[0], transformDict["rotationX"], transformDict["rotationY"], transformDict["rotationZ"])
             return transformResult
         except Exception as e:
-            errorMsg = "Unknown error mapping euler transforms for keyframe object of action %s.  landmarkTransform = %s Traceback = %s" %(self.meme, landmarkTransform[1], e)
+            errorMsg = f"Unknown error mapping euler transforms for keyframe object of action {self.meme}.  landmarkTransform = {landmarkTransform[1]} Traceback = {e}"
             logProxy.log(logProxy.logType, logProxy.WARNING , method , errorMsg)
             return False
     
@@ -731,7 +731,7 @@ class KeyFrame(Action, ConditionalAction):
             transformResult = self.checkDeltas(landmarkTransform[0], transformDict["deltaX"], transformDict["deltaY"], transformDict["deltaZ"])
             return transformResult
         except Exception as e:
-            errorMsg = "Unknown error mapping transform deltas for keyframe object of action %s.  landmarkTransform = %s Traceback = %s" %(self.meme, landmarkTransform[1], e)
+            errorMsg = f"Unknown error mapping transform deltas for keyframe object of action {self.meme}.  landmarkTransform = {landmarkTransform[1]} Traceback = {e}"
             logProxy.log(logProxy.logType, logProxy.WARNING , method , errorMsg)
             return False
     
@@ -746,7 +746,7 @@ class KeyFrame(Action, ConditionalAction):
                 stateChange.execute(argumentMap["subjectID"], argumentMap["objectID"])
                 self.conditionalStimuli.extend(stateChange.stateChangeStimuli)
         except Exception as e:
-            errorMsg = "Unknown error mapping state change for keyframe object of action %s.  argumentMap = %s Traceback = %s" %(self.meme, argumentMap, e)
+            errorMsg = f"Unknown error mapping state change for keyframe object of action {self.meme}.  argumentMap = {argumentMap} Traceback = {e}"
             logProxy.log(logProxy.logType, logProxy.WARNING , method , errorMsg)
         finally: return None
             
@@ -772,7 +772,7 @@ class KeyFrame(Action, ConditionalAction):
             except copy.Error as e:
                 raise e
             except Exception as e:
-                errorMsg = "Copy Error.  Traceback = %s" %(e)
+                errorMsg = f"Copy Error.  Traceback = {e}"
                 raise Exception(errorMsg)
             #argumentMap = copy.deepcopy(rtParams)
             argumentMap["objectID"] = objectID
@@ -782,10 +782,10 @@ class KeyFrame(Action, ConditionalAction):
             unusedReturn = self.script.map(self.mapFunctionStateChangesInner, self.stateChangeSuccessor, argumentMap)
         except copy.Error as e:
             #Logged as error instead of warning because an uncopyable paramater payload from a client may be indicative of an attempted attack.
-            errorMsg = "Unable to map state change for keyframe object of action %s because runtime parameters contains an uncopyable object!  rtParams = %s" %(self.meme, rtParams)
+            errorMsg = f"Unable to map state change for keyframe object of action {self.meme} because runtime parameters contains an uncopyable object!  rtParams = {rtParams}"
             logProxy.log(logProxy.logType, logProxy.ERROR , method , errorMsg)
         except Exception as e:
-            errorMsg = "Unknown error mapping state change for keyframe object of action %s.  rtParams = %s Traceback = %s" %(self.meme, rtParams, e)
+            errorMsg = f"Unknown error mapping state change for keyframe object of action {self.meme}.  rtParams = {rtParams} Traceback = {e}"
             logProxy.log(logProxy.logType, logProxy.WARNING , method , errorMsg)
         finally: return None
     
@@ -804,7 +804,7 @@ class KeyFrame(Action, ConditionalAction):
                 unusedEulerY = script.setEntityPropertyValue(eulerYElem[0], "Angle", transformDict["rotationY"])
                 unusedEulerZ = script.setEntityPropertyValue(eulerZElem[0], "Angle", transformDict["rotationZ"])
         except Exception as e:
-            errorMsg = "Unknown error mapping euler transforms for keyframe object of action %s.  landmarkTransform = %s Traceback = %s" %(self.meme, landmarkTransform[1], e)
+            errorMsg = f"Unknown error mapping euler transforms for keyframe object of action {self.meme}.  landmarkTransform = {landmarkTransform[1]} Traceback = {e}"
             logProxy.log(logProxy.logType, logProxy.WARNING , method , errorMsg)
         finally: return True
     
@@ -820,7 +820,7 @@ class KeyFrame(Action, ConditionalAction):
                 unusedDeltaY = script.setEntityPropertyValue(offsetElem[0], "y", transformDict["deltaY"])
                 unusedDeltaZ = script.setEntityPropertyValue(offsetElem[0], "z", transformDict["deltaZ"])
         except Exception as e:
-            errorMsg = "Unknown error mapping delta transforms for keyframe object of action %s.  landmarkTransform = %s Traceback = %s" %(self.meme, landmarkTransform[1], e)
+            errorMsg = f"Unknown error mapping delta transforms for keyframe object of action {self.meme}.  landmarkTransform = {landmarkTransform[1]} Traceback = {e}"
             logProxy.log(logProxy.logType, logProxy.WARNING , method , errorMsg)
         finally: return True
         
@@ -879,7 +879,7 @@ class KeyFrame(Action, ConditionalAction):
                     viewList.remove(None)
                     return viewList
         except Exception as e:
-            errorMsg = "Unknown error selecting object entities for keyframe object of action %s.  rtParams = %s Traceback = %s" %(self.meme, rtParams, e)
+            errorMsg = f"Unknown error selecting object entities for keyframe object of action {self.meme}.  rtParams = {rtParams} Traceback = {e}"
             logProxy.log(logProxy.logType, logProxy.WARNING , method , errorMsg)
             return []
     # /objects
@@ -893,7 +893,7 @@ class KeyFrame(Action, ConditionalAction):
             stateChangeStimuli = script.map(self.mapFunctionStateChangesOuter, rtParams["objectID"], rtParams)
             self.conditionalStimuli.extend(stateChangeStimuli)
         except Exception as e:
-            errorMsg = "Unknown error changing states for keyframe object of action %s.  rtParams = %s Traceback = %s" %(self.meme, rtParams, e)
+            errorMsg = f"Unknown error changing states for keyframe object of action {self.meme}.  rtParams = {rtParams} Traceback = {e}"
             logProxy.log(logProxy.logType, logProxy.WARNING , method , errorMsg)
     #/ State Changes
     
@@ -915,7 +915,7 @@ class KeyFrame(Action, ConditionalAction):
                         stimulusMessage = Engine.StimulusMessage(conditionalStimulus, rtParams, [])
                     Engine.siQ.put(stimulusMessage)
         except Exception as e:
-            errorMsg = "Unknown error broadcasting stimuli for keyframe object of action %s.  Traceback = %s" %(self.meme, e)
+            errorMsg = f"Unknown error broadcasting stimuli for keyframe object of action {self.meme}.  Traceback = {e}"
             logProxy.log(logProxy.logType, logProxy.WARNING , method , errorMsg)
 
 
@@ -925,7 +925,7 @@ class KeyFrame(Action, ConditionalAction):
             #todo - refactor script.evaluateEntity to add objects
             script.evaluateEntity(self.uuid, rtParams, rtParams['actionID'], rtParams['subjectID'], rtParams['objectID'])
         except Exception as e:
-            errorMsg = "Unknown error invoking keyframe object of action %s.  Traceback = %s" %(self.meme, e)
+            errorMsg = f"Unknown error invoking keyframe object of action {self.meme}.  Traceback = {e}"
             logProxy.log(logProxy.logType, logProxy.WARNING , method , errorMsg)
         
 
@@ -1019,7 +1019,7 @@ def getActionIndexItem(toBeIndexed):
         actionMemes = apiProxy.getLinkCounterpartsByMetaMemeType(toBeIndexed, "Action.Throw")
         if len(actionMemes) > 0:
             memeName = apiProxy.getEntityMemeType(toBeIndexed)
-            logProxy.log(logProxy.logType, logProxy.DEBUG ,  method, "Action %s is a Throw" %memeName)
+            logProxy.log(logProxy.logType, logProxy.DEBUG ,  method, f"Action {memeName} is a Throw")
             try:
                 action = Throw()
                 action.initialize(script, actionMemes[0], toBeIndexed)
@@ -1027,12 +1027,12 @@ def getActionIndexItem(toBeIndexed):
                 actionMeme = None
                 try: actionMeme = actionMemes[0]
                 except: pass
-                errorMsg = "Member Action.Throw entity %s is invalid" %actionMeme
+                errorMsg = f"Member Action.Throw entity {actionMeme} is invalid"
                 raise Exceptions.TemplatePathError(errorMsg)
         else:
             actionMemes = apiProxy.getLinkCounterpartsByMetaMemeType(toBeIndexed, "Action.Catch")
             if len(actionMemes) > 0:
-                logProxy.log(logProxy.logType, logProxy.DEBUG ,  method, "Action %s is a Catch" %toBeIndexed)
+                logProxy.log(logProxy.logType, logProxy.DEBUG ,  method, f"Action {toBeIndexed} is a Catch")
                 try:
                     action = Catch()
                     action.initialize(script, actionMemes[0], toBeIndexed)
@@ -1040,13 +1040,13 @@ def getActionIndexItem(toBeIndexed):
                     actionMeme = None
                     try: actionMeme = actionMemes[0]
                     except: pass
-                    errorMsg = "Member Action.Catch entity %s is invalid" %actionMeme
+                    errorMsg = f"Member Action.Catch entity {actionMeme} is invalid"
                     raise Exceptions.TemplatePathError(errorMsg)
             else:
                 memeName = script.getEntityMemeType(toBeIndexed)
                 actionMemes = script.getLinkCounterpartsByMetaMemeType(toBeIndexed, "Action.Choreography")
                 if len(actionMemes) > 0:
-                    logProxy.log(logProxy.logType, logProxy.DEBUG ,  method, "Action %s is a Choreography" %memeName)
+                    logProxy.log(logProxy.logType, logProxy.DEBUG ,  method, f"Action {memeName} is a Choreography")
                     try:
                         action = ActionSet()
                         action.initialize(script, actionMemes[0], toBeIndexed)
@@ -1054,12 +1054,12 @@ def getActionIndexItem(toBeIndexed):
                         actionMeme = None
                         try: actionMeme = actionMemes[0]
                         except: pass
-                        errorMsg = "Member Action.Choreography entity %s is invalid" %actionMeme
+                        errorMsg = f"Member Action.Choreography entity {actionMeme} is invalid"
                         raise Exceptions.TemplatePathError(errorMsg)
                 else:
                     actionMemes = script.getLinkCounterpartsByMetaMemeType(toBeIndexed, "Action.KeyFrame")
                     if len(actionMemes) > 0:
-                        logProxy.log(logProxy.logType, logProxy.DEBUG ,  method, "Action %s is a KeyFrame" %memeName])
+                        logProxy.log(logProxy.logType, logProxy.DEBUG ,  method, f"Action {memeName} is a KeyFrame")
                         try:
                             action = KeyFrame()
                             action.initialize(script, actionMemes[0], toBeIndexed)
@@ -1067,26 +1067,26 @@ def getActionIndexItem(toBeIndexed):
                             actionMeme = None
                             try: actionMeme = actionMemes[0]
                             except: pass
-                            errorMsg = "Member Action.KeyFrame entity %s is invalid" %actionMeme
+                            errorMsg = f"Member Action.KeyFrame entity {actionMeme} is invalid"
                             raise Exceptions.TemplatePathError(errorMsg)
                     else:
                         linkOverview = script.getEntityCounterparts(toBeIndexed)
-                        errorMsg = "Action %s has no valid child type.  Link overview = %s" %(memeName, linkOverview)
-                        logProxy.log(logProxy.logType, logProxy.WARNING , method, errorMsg])
+                        errorMsg = f"Action {memeName} has no valid child type.  Link overview = {linkOverview}"
+                        logProxy.log(logProxy.logType, logProxy.WARNING , method, errorMsg)
         #now finish creating the action object
         action.bootstrap(script)
-        logProxy.log(logProxy.logType, logProxy.DEBUG , method, "Bootstrapped %s %s" %(type(action), action.meme)])
-        logProxy.log(logProxy.logType, logProxy.DEBUG ,  method, " - exiting"])
+        logProxy.log(logProxy.logType, logProxy.DEBUG , method, f"Bootstrapped {type(action)} {action.meme}")
+        logProxy.log(logProxy.logType, logProxy.DEBUG ,  method, " - exiting")
         return action
     except Exceptions.ScriptError as e:
         actionMeme = script.getEntityMemeType(toBeIndexed)
-        errorMsg = "Error in method while creating action index item %s.  Traceback = %s" %(actionMeme, e)
-        logProxy.log(logProxy.logType, logProxy.WARNING ,  method, errorMsg])
+        errorMsg = f"Error in method while creating action index item {actionMeme}.  Traceback = {e}"
+        logProxy.log(logProxy.logType, logProxy.WARNING ,  method, errorMsg)
         raise e        
     except Exception as e:
         actionMeme = script.getEntityMemeType(toBeIndexed)
-        errorMsg = "Error creating action index item %s.  Traceback = %s" %(actionMeme, e)
-        logProxy.log(logProxy.logType, logProxy.WARNING ,  method, errorMsg])
+        errorMsg = f"Error creating action index item {actionMeme}.  Traceback = {e}"
+        logProxy.log(logProxy.logType, logProxy.WARNING ,  method, errorMsg)
         raise e
 
         

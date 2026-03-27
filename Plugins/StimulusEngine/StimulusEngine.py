@@ -16,7 +16,7 @@ from ... import Exceptions
 
 moduleName = 'StimulusEngine'
 logType = Graph.logTypes.CONTENT
-logLevel = Graph.LogLevel()
+logLevel = Graph.LogLevel
 graphAPI = None
 
 
@@ -198,11 +198,11 @@ class StimulusAPI(object):
                 pageIDList.extend(localPageIDListAn)
             else:
                 #seriously, we should never need to  throw this, but let's be defensive anyway
-                errorMsg = "StimulusScope methods take only the types Stimulus.Stimulus, Stimulus.ConditionalStimulus and Stimulus.StimulusChoice asarguments, not %s" %metamemeType
+                errorMsg = f"StimulusScope methods take only the types Stimulus.Stimulus, Stimulus.ConditionalStimulus and Stimulus.StimulusChoice asarguments, not {metamemeType}"
                 raise Exceptions.InvalidStimulusProcessingType(errorMsg)  
             return pageIDList
         except Exception as e:
-            errorMsg = "Unknown error selecting pages of stimulus %s.  Traceback = %s" %(stimulusID, e)
+            errorMsg = f"Unknown error selecting pages of stimulus {stimulusID}.  Traceback = {e}"
             raise Exceptions.ScriptError(errorMsg)
         
     
@@ -274,11 +274,11 @@ class StimulusProfile(object):
         except Exceptions.MemeMembershipValidationError as e:
             pass
         except IndexError as e:
-            fullDescriptorPath = "%s%s" %(self.stimulusMeme, descriptorPath) 
-            errorMsg = "Stimulus %s has null descriptor at path %s.  Check the meme!" %(self.stimulusMeme, fullDescriptorPath)
+            fullDescriptorPath = f"{self.stimulusMeme}{descriptorPath}" 
+            errorMsg = f"Stimulus {self.stimulusMeme} has null descriptor at path {fullDescriptorPath}.  Check the meme!"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])             
         except Exception as e:
-            errorMsg = "Error while trying to resolve stimulus %s %s for agents %s.  Traceback = %s" %(self.stimulusMeme, self.stimulusID, self.agentSet, e)
+            errorMsg = f"Error while trying to resolve stimulus {self.stimulusMeme} {self.stimulusID} for agents {self.agentSet}.  Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])    
             
             
@@ -398,7 +398,7 @@ class Report(object):
                 orderedBucketList[prio] = stimulusProfile
                 
         else:
-            errorMsg = "The Stimulus Engine may only take the types Stimulus.Stimulus and Stimulus.StimulusChoice.  Stimulus Request contained a meme of metameme type %s" %metamemeType
+            errorMsg = f"The Stimulus Engine may only take the types Stimulus.Stimulus and Stimulus.StimulusChoice.  Stimulus Request contained a meme of metameme type {metamemeType}"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
             raise Exceptions.InvalidStimulusProcessingType(errorMsg)            
         self.buckets = orderedBucketList    
@@ -432,7 +432,7 @@ class Report(object):
                             stimulusProfile.agentSet.update(stimulusAgentsSet)
                         except Exception as e:
                             pass
-                        logMessage = "Stimulus Agents that can view scope of message: = %s" %(stimulusAgentsSet)
+                        logMessage = f"Stimulus Agents that can view scope of message: = {stimulusAgentsSet}"
                         Graph.logQ.put( [logType , logLevel.DEBUG , method , logMessage])
                     else:
                         fullAgentSet = set([])
@@ -478,7 +478,7 @@ class Report(object):
                         stimulusMeme = graphAPI.getEntityMemeType(stimulusProfile.stimulusID)
                     except Exception as e: 
                         pass
-                    errorMsg = "Unknown error testing condition %s on stimulus %s.  Traceback = %s" %(conditionMeme, stimulusMeme, e)
+                    errorMsg = f"Unknown error testing condition {conditionMeme} on stimulus {stimulusMeme}.  Traceback = {e}"
                     Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
                     return False
                 
@@ -531,7 +531,7 @@ class Report(object):
                     stimulusMeme = graphAPI.getEntityMemeType(stimulusProfile.stimulusID)
                     errorMsg = "Can't normalize conditional stimulus %s agent set with regard to lower prio stimuli.  %s lower prio stimuli unnormalized.  Traceback = %s" %(stimulusMeme, remaining, e)
                 except Exception as ee:
-                    errorMsg = "Unexpected error %s occurred while trying to normalized conditional stimulus set.  Traceback = %s" %(ee, e)
+                    errorMsg = f"Unexpected error {ee} occurred while trying to normalized conditional stimulus set.  Traceback = {e}"
                 finally:
                     Graph.logQ.put( [logType , logLevel.ERROR , method , errorMsg])
             
@@ -573,7 +573,7 @@ class Plugin(Engine.ServicePlugin):
             self.startupIndexingFinished = False
             threading.Thread.__init__(self, name = rtParams['moduleName'])
         except Exception as e:
-            errorMsg = "Fatal Error while starting Stimulus Engine. Traceback = %s" %e
+            errorMsg = f"Fatal Error while starting Stimulus Engine. Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.ERROR , method , errorMsg])
         #Graph.logQ.put( [logType , logLevel.DEBUG , method , "exiting"])
         
@@ -609,10 +609,10 @@ class Plugin(Engine.ServicePlugin):
                         else: 
                             self.exit()
                     except Exception as e:
-                        errorMsg = "Unknown error while trying to process stimulus.  Traceback = %s" %e
+                        errorMsg = f"Unknown error while trying to process stimulus.  Traceback = {e}"
                         Graph.logQ.put( [logType , logLevel.ERROR , method , errorMsg])
             except Exception as e:
-                errorMsg = "Unknown error in stimulus engine.  Traceback = %s" %e
+                errorMsg = f"Unknown error in stimulus engine.  Traceback = {e}"
                 Graph.logQ.put( [logType , logLevel.ERROR , method , errorMsg])                
 
 
@@ -674,11 +674,11 @@ class Plugin(Engine.ServicePlugin):
                             #Graph.logQ.put( [logType , logLevel.WARNING, method , theMsg])
             except EngineExceptions.NoSuchBroadcasterError as e:
                 memePath = graphAPI.getEntityMemeType(stimulusSignal.stimulusID)
-                errorMsg = "Stimulus %s has no broadcaster.  Traceback = %s" %(memePath, e)
+                errorMsg = f"Stimulus {memePath} has no broadcaster.  Traceback = {e}"
                 Graph.logQ.put( [logType , logLevel.ERROR, method , errorMsg])
             except EngineExceptions.NullBroadcasterIDError as e:
                 memePath = graphAPI.getEntityMemeType(stimulusSignal.stimulusID)
-                errorMsg = "Stimulus %s has no broadcaster.  Traceback = %s" %(memePath, e)
+                errorMsg = f"Stimulus {memePath} has no broadcaster.  Traceback = {e}"
                 Graph.logQ.put( [logType , logLevel.ERROR, method , errorMsg])
             except Exception as e:
                 pass
@@ -688,7 +688,7 @@ class Plugin(Engine.ServicePlugin):
             try:
                 stimulusSignalMeme = graphAPI.getEntityMemeType(stimulusSignal.stimulusID)
             except: pass
-            errorMessage = "Error processing stimulus %s for agentlist %s.  Traceback = %s" %(stimulusSignalMeme, stimulusSignal.targetAgents, e)
+            errorMessage = f"Error processing stimulus {stimulusSignalMeme} for agentlist {stimulusSignal.targetAgents}.  Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMessage])
 
 
@@ -713,10 +713,10 @@ class Plugin(Engine.ServicePlugin):
                 self.server.register_function(self.getStimulus, 'putStimulus')
             
             #Go into the main listener loop
-            Graph.logQ.put( [logType , logLevel.ADMIN , method , "Main process plugin thread %s is listening an an XML RPC server on port %s" %(self.pluginName, self.portID)])
+            Graph.logQ.put( [logType , logLevel.ADMIN , method , f"Main process plugin thread {self.pluginName} is listening an an XML RPC server on port {self.portID}"])
             self.server.serve_forever()
         except Exception as e:
-            Graph.logQ.put( [logType , logLevel.ERROR , method , "Main process plugin thread % unable to start!!!  Traceback = %s" %(self.pluginName, e)])
+            Graph.logQ.put( [logType , logLevel.ERROR , method , f"Main process plugin thread % unable to start!!!  Traceback = {self.pluginName}"])
             #Graph.logQ.put( [logType , logLevel.DEBUG , method , "exiting"])
     """
 
@@ -730,7 +730,7 @@ class Plugin(Engine.ServicePlugin):
         
         numberOfStimuli = Engine.stimulusIndexerQ.qsize()
 
-        Graph.logQ.put( [logType , logLevel.INFO , methodName, "Descriptor (broadcaster) Indexer - Found %s descriptors to index" %(numberOfStimuli)])
+        Graph.logQ.put( [logType , logLevel.INFO , methodName, f"Descriptor (broadcaster) Indexer - Found {numberOfStimuli} descriptors to index"])
         while self.startupIndexingFinished == False:
             try:
                 stimulusToBeIndexed = Engine.stimulusIndexerQ.get_nowait()
@@ -739,16 +739,16 @@ class Plugin(Engine.ServicePlugin):
                     nTh = nTh + 1
                 except Exception as e:
                     stimulusMeme = graphAPI.getEntityMetaMemeType(stimulusToBeIndexed)
-                    Graph.logQ.put( [logType , logLevel.ERROR , methodName, "Descriptor (broadcaster) Indexer - Problem indexing stimulus %s.  Traceback = %s" %(stimulusMeme, e)])
+                    Graph.logQ.put( [logType , logLevel.ERROR , methodName, f"Descriptor (broadcaster) Indexer - Problem indexing stimulus {stimulusMeme}.  Traceback = {e}"])
             except queue.Empty:
                 self.startupIndexingFinished = True
                 endTime = time.time()
                 deltaT = endTime - startTime
                 Graph.logQ.put( [logType , logLevel.INFO , methodName, "Descriptor (broadcaster) Indexer - Finished initial loading from engine stimulus indexer queue"])
-                Graph.logQ.put( [logType , logLevel.INFO , methodName, "Descriptor (broadcaster) Indexer - Indexed %s descriptors in %s seconds" %(nTh, deltaT)])
+                Graph.logQ.put( [logType , logLevel.INFO , methodName, f"Descriptor (broadcaster) Indexer - Indexed {nTh} descriptors in {deltaT} seconds"])
             except Exception as e:
                 self.startupIndexingFinished = True
-                Graph.logQ.put( [logType , logLevel.ERROR , methodName, "Descriptor (broadcaster) Indexer - Unknown Error.  Traceback = %s" %e])
+                Graph.logQ.put( [logType , logLevel.ERROR , methodName, f"Descriptor (broadcaster) Indexer - Unknown Error.  Traceback = {e}"])
                 self._stopevent.wait(self._sleepperiod)
             
 
@@ -792,7 +792,7 @@ class ConditionProcessor(object):
         try:
             conditionID = argumentMap["conditionID"]
         except Exception as e:
-            errorMsg = "Conditional Stimulus with undeclared condition on agent %s.  Traceback = %s" %(agentID, e)
+            errorMsg = f"Conditional Stimulus with undeclared condition on agent {agentID}.  Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
         
         try: actionID = argumentMap["actionID"]
@@ -809,7 +809,7 @@ class ConditionProcessor(object):
                 returnVal = agentID
             return returnVal  
         except Exception as e:
-            errorMsg = "Unknown error testing individual condition %s on agent %s.  Traceback = %s" %(argumentMap["conditionID"], agentID, e)
+            errorMsg = f"Unknown error testing individual condition {argumentMap["conditionID"]} on agent {agentID}.  Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
             return False
     
@@ -837,7 +837,7 @@ class ConditionProcessor(object):
                 conditionMeme = graphAPI.getEntityMemeType(conditionID)
                 stimulusMeme = graphAPI.getEntityMemeType(stimulusID)
             except: pass
-            errorMsg = "Unknown error testing %s agents in scope for conditions %s on stimulus %s.  Traceback = %s" %(len(okAgents), conditionMeme, stimulusMeme, e)
+            errorMsg = f"Unknown error testing {len(okAgents)} agents in scope for conditions {conditionMeme} on stimulus {stimulusMeme}.  Traceback = {e}"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
             return set([])
         #Python's map/reduce functionality sometimes turns empty lists into None values. Remove them 
@@ -875,7 +875,7 @@ class ConditionProcessor(object):
         except Exceptions.ScriptError as e:
             Graph.logQ.put( [logType , logLevel.WARNING , method , e])
         except Exception as e:
-            errorMsg = "Unknown error selecting observer agents for stimulus %s.  rtParams = %s Traceback = %s" %(stimulusID, e)
+            errorMsg = f"Unknown error selecting observer agents for stimulus {stimulusID}.  rtParams = {e} Traceback = %s"
             Graph.logQ.put( [logType , logLevel.WARNING , method , errorMsg])
             return set([])
     # /objects

@@ -16,13 +16,13 @@ import Graphyne.Graph as Graph
 
 #globals
 logType = Graph.logTypes.ENGINE
-logLevel = Graph.LogLevel()
+logLevel = Graph.LogLevel
 tiogaHome = os.path.dirname(os.path.abspath(__file__))
 
 
 
 def modulePathToFilePath(modulePath):
-    splitPath = re.split('\.', modulePath)
+    splitPath = re.split(r'\.', modulePath)
     filePath = os.path.join(tiogaHome, splitPath[0])
     splitPath.remove(splitPath[0])
     for fragment in splitPath:
@@ -38,7 +38,7 @@ def getModuleFromResolvedPath(fullModuleName):
             x = getattr(x, fragment)
         return x
     except Exception as e:
-        unused_errorMsg = "unable to resolve module at path %s" %fullModuleName
+        unused_errorMsg = f"unable to resolve module at path {fullModuleName}"
         raise e
 
 
@@ -54,7 +54,7 @@ def ensureDirectory(targetDir):
         
     for badAncestor in badAncestors:
         targetDir = os.path.join(firstGoodAncestor, badAncestor)
-        print(("creating %s" %targetDir))
+        print((f"creating {targetDir}"))
         try:
             os.mkdir(targetDir)
         except OSError as e:
@@ -85,7 +85,7 @@ def walkDirectory(workingDir, packagePath):
         
     for dirEntity in dirList:
         #Graph.logQ.put( [logType , logLevel.DEBUG , method , 'Examining %s' % dirEntity])
-        trimmedfile = re.split('\.', dirEntity)
+        trimmedfile = re.split(r'\.', dirEntity)
         if packagePath is not None:
             localPackagePath = packagePath + '.' + trimmedfile[0]
         else:
@@ -135,7 +135,7 @@ def walkRepository():
         fileName = os.path.join(dataLocation, package)
         fileData = {}
         fileStream = None
-        trimmedPackage = re.split('\.', package)
+        trimmedPackage = re.split(r'\.', package)
         packagePath = trimmedPackage[0]
         #packages will be zip files.  Free modules wll not be
         try:
@@ -143,7 +143,7 @@ def walkRepository():
             #Graph.logQ.put( [logType , logLevel.DEBUG , method , '%s is a zip archve' % fileName])
             #Graph.logQ.put( [logType , logLevel.DEBUG , method , '%s contains the following files: %s' % (fileName, z.namelist())])
             for nextFile in z.namelist():
-                trimmedfile = re.split('\.', nextFile)
+                trimmedfile = re.split(r'\.', nextFile)
                 localPackagePath = packagePath + '.' + trimmedfile[0]
                 #Graph.logQ.put( [logType , logLevel.DEBUG , method , 'Examining %s' % localPackagePath])
                 try:
@@ -212,7 +212,7 @@ def defaultCSS():
     hBlankSpace = "div.hBlankSpace {padding-left:100px}"
     vAlignment = "div.vAlignment {margin-top:10px}"
     
-    defaultCSS = "<!--\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n-->" %(subdivision, tableheader, badOVCell, goodOVCell, badDRow, goodDRow, badOverviewRow, goodOverviewRow, tableHeaderRow, detailsCell, vBlankSpace, hBlankSpace, vAlignment)
+    defaultCSS = f"<!--\n{subdivision}\n{tableheader}\n{badOVCell}\n{goodOVCell}\n{badDRow}\n{goodDRow}\n{badOverviewRow}\n{goodOverviewRow}\n{tableHeaderRow}\n{detailsCell}\n{vBlankSpace}\n{hBlankSpace}\n{vAlignment}\n-->"
     return defaultCSS
 
     

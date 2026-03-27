@@ -165,11 +165,11 @@ def getStimulusScope(stimulusID):
             pageIDList.extend(localPageIDListAn)
         else:
             #seriously, we should never need to  throw this, but let's be defensive anyway
-            errorMsg = "StimulusScope methods take only the types Stimulus.Stimulus, Stimulus.ConditionalStimulus and Stimulus.StimulusChoice asarguments, not %s" %metamemeType
-            raise Exceptions.InvalidStimulusProcessingType(errorMsg)  
+            errorMsg = f"StimulusScope methods take only the types Stimulus.Stimulus, Stimulus.ConditionalStimulus and Stimulus.StimulusChoice asarguments, not {metamemeType}"
+            raise Exceptions.InvalidStimulusProcessingType(errorMsg)
         return pageIDList
     except Exception as e:
-        errorMsg = "Unknown error selecting pages of stimulus %s.  Traceback = %s" %(stimulusID, e)
+        errorMsg = f"Unknown error selecting pages of stimulus {stimulusID}.  Traceback = {e}"
         raise Exceptions.ScriptError(errorMsg)
     
 
